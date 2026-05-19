@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import roomescape.auth.annotation.AdminRequired;
+import roomescape.auth.annotation.LoginRequired;
 import roomescape.theme.domain.Theme;
 import roomescape.theme.dto.request.ThemeActiveUpdateDto;
 import roomescape.theme.dto.request.ThemeSaveDto;
@@ -29,6 +31,8 @@ public class AdminThemeController {
     }
 
     @GetMapping
+    @LoginRequired
+    @AdminRequired
     @Operation(summary = "Read all themes", description = "모든 테마를 조회하는 api")
     public ResponseEntity<List<ThemeDetailDto>> getThemes() {
         List<ThemeDetailDto> responseData = themeService.findThemes().stream()
@@ -38,6 +42,8 @@ public class AdminThemeController {
     }
 
     @GetMapping("/{id}")
+    @LoginRequired
+    @AdminRequired
     @Operation(summary = "Read a theme by id", description = "테마 id로 테마를 조회하는 api")
     public ResponseEntity<ThemeDetailDto> getTheme(@PathVariable Long id) {
         ThemeDetailDto responseData = ThemeDetailDto.from(themeService.findTheme(id));
@@ -45,6 +51,8 @@ public class AdminThemeController {
     }
 
     @PostMapping
+    @LoginRequired
+    @AdminRequired
     @Operation(summary = "Create a theme", description = "테마를 생성하는 api")
     public ResponseEntity<ThemeDetailDto> createTheme(@Valid @RequestBody ThemeSaveDto dto) {
         Theme theme = themeService.register(dto.name(), dto.description(), dto.thumbnailUrl());
@@ -53,6 +61,8 @@ public class AdminThemeController {
     }
 
     @PatchMapping("/{id}")
+    @LoginRequired
+    @AdminRequired
     @Operation(summary = "Update theme status", description = "테마 활성화 상태를 업데이트하는 api")
     public ResponseEntity<ThemeDetailDto> updateThemeStatus(@PathVariable Long id, @Valid @RequestBody ThemeActiveUpdateDto dto) {
         Theme theme = themeService.updateStatus(id, dto.isActive());

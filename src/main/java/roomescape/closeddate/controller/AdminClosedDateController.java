@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import roomescape.auth.annotation.AdminRequired;
+import roomescape.auth.annotation.LoginRequired;
 import roomescape.closeddate.dto.request.ClosedDateSaveDto;
 import roomescape.closeddate.dto.response.ClosedDateDetailDto;
 import roomescape.closeddate.service.ClosedDateService;
@@ -27,6 +29,8 @@ public class AdminClosedDateController {
     }
 
     @GetMapping
+    @LoginRequired
+    @AdminRequired
     @Operation(summary = "Get all closed dates", description = "휴무일 전체 목록을 조회하는 api")
     public ResponseEntity<List<ClosedDateDetailDto>> getClosedDates() {
         List<ClosedDateDetailDto> responseData = closedDateService.findClosedDates().stream()
@@ -36,6 +40,8 @@ public class AdminClosedDateController {
     }
 
     @PostMapping
+    @LoginRequired
+    @AdminRequired
     @Operation(summary = "Create a closed date", description = "휴무일을 등록하는 api")
     public ResponseEntity<ClosedDateDetailDto> createClosedDate(
             @Valid @RequestBody ClosedDateSaveDto dto
@@ -45,6 +51,8 @@ public class AdminClosedDateController {
     }
 
     @DeleteMapping("/{id}")
+    @LoginRequired
+    @AdminRequired
     @Operation(summary = "Delete a closed date", description = "휴무일을 삭제하는 api")
     public ResponseEntity<Void> deleteClosedDate(@PathVariable Long id) {
         closedDateService.deregister(id);
