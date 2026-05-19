@@ -1,3 +1,8 @@
+MERGE INTO member (name, login_id, password, role) KEY (login_id)
+    VALUES ('관리자', 'admin', 'admin1234', 'ADMIN');
+MERGE INTO member (name, login_id, password) KEY (login_id)
+    VALUES ('테스트유저', 'user01', 'user1234');
+
 MERGE INTO reservation_time (start_at) KEY (start_at) VALUES ('11:00:00');
 MERGE INTO reservation_time (start_at) KEY (start_at) VALUES ('12:00:00');
 MERGE INTO reservation_time (start_at) KEY (start_at) VALUES ('13:00:00');
