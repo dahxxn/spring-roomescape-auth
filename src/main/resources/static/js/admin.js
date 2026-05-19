@@ -1,4 +1,7 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    const isLoggedIn = await initAuth();
+    if (!isLoggedIn) return;
+
     initTabs();
     initDatePicker();
     initTimeSelectBox();
@@ -73,8 +76,14 @@ function initTimeSelectBox() {
 }
 
 async function loadDates() {
-    const response = await fetch("/admin/closed-dates");
-    const dates = await response.json();
+    const response = await fetch("/admin/closed-dates", {
+        credentials: "same-origin"
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    const dates = await checkedResponse.json();
 
     const tbody = document.getElementById("date-table-body");
     tbody.innerHTML = "";
@@ -109,11 +118,21 @@ async function createDate() {
         return;
     }
 
-    await fetch("/admin/closed-dates", {
+    const response = await fetch("/admin/closed-dates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ date })
     });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
 
     dateInput.value = "";
     selectedDateText.textContent = "날짜를 선택하세요";
@@ -123,13 +142,32 @@ async function createDate() {
 async function deleteDate(id) {
     if (!confirm("해당 휴무일을 삭제하시겠습니까?")) return;
 
-    await fetch(`/admin/closed-dates/${id}`, { method: "DELETE" });
+    const response = await fetch(`/admin/closed-dates/${id}`, {
+        method: "DELETE",
+        credentials: "same-origin"
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
+
     await loadDates();
 }
 
 async function loadTimes() {
-    const response = await fetch("/admin/times");
-    const times = await response.json();
+    const response = await fetch("/admin/times", {
+        credentials: "same-origin"
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    const times = await checkedResponse.json();
 
     const tbody = document.getElementById("time-table-body");
     tbody.innerHTML = "";
@@ -154,13 +192,21 @@ async function createTime() {
     const minute = document.getElementById("minute-select").value;
     const startAt = `${hour}:${minute}:00`;
 
-    await fetch("/admin/times", {
+    const response = await fetch("/admin/times", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ startAt })
     });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
 
     await loadTimes();
 }
@@ -170,9 +216,19 @@ async function deleteTime(id) {
         return;
     }
 
-    await fetch(`/admin/times/${id}`, {
-        method: "DELETE"
+    const response = await fetch(`/admin/times/${id}`, {
+        method: "DELETE",
+        credentials: "same-origin"
     });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
 
     await loadTimes();
 }
@@ -191,8 +247,14 @@ function formatTime(value) {
 }
 
 async function loadThemes() {
-    const response = await fetch("/admin/themes");
-    const themes = await response.json();
+    const response = await fetch("/admin/themes", {
+        credentials: "same-origin"
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    const themes = await checkedResponse.json();
 
     const tbody = document.getElementById("theme-table-body");
     tbody.innerHTML = "";
@@ -229,17 +291,25 @@ async function createTheme() {
         return;
     }
 
-    await fetch("/admin/themes", {
+    const response = await fetch("/admin/themes", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
             name,
             description,
             thumbnailUrl
         })
     });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
 
     document.getElementById("theme-name-input").value = "";
     document.getElementById("theme-description-input").value = "";
@@ -249,20 +319,34 @@ async function createTheme() {
 }
 
 async function toggleThemeStatus(id, isActive) {
-    await fetch(`/admin/themes/${id}`, {
+    const response = await fetch(`/admin/themes/${id}`, {
         method: "PATCH",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ isActive })
     });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
 
     await loadThemes();
 }
 
 async function loadReservations() {
-    const response = await fetch("/admin/reservations");
-    const reservations = await response.json();
+    const response = await fetch("/admin/reservations", {
+        credentials: "same-origin"
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    const reservations = await checkedResponse.json();
 
     const tbody = document.getElementById("reservation-table-body");
     tbody.innerHTML = "";
@@ -291,9 +375,19 @@ async function cancelReservation(id) {
         return;
     }
 
-    await fetch(`/admin/reservations/${id}/cancel`, {
-        method: "PATCH"
+    const response = await fetch(`/admin/reservations/${id}/cancel`, {
+        method: "PATCH",
+        credentials: "same-origin"
     });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
 
     await loadReservations();
 }

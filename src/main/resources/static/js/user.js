@@ -5,6 +5,8 @@ let selectedTime = null;
 const DEFAULT_THUMBNAIL_URL = 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80';
 
 document.addEventListener("DOMContentLoaded", async () => {
+    await initAuth(); // 로그인 여부만 확인, return으로 막지 않음
+
     await loadThemes();
     await loadPopularThemes();
     await loadDates();
@@ -13,7 +15,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function loadPopularThemes() {
     const popularThemeList = document.getElementById("popular-theme-list");
 
-    const response = await fetch("/themes/popular?top=10");
+    const response = await fetch("/themes/popular?top=10", {
+        credentials: "same-origin"
+    });
 
     if (!response.ok) {
         popularThemeList.innerHTML = `
@@ -60,7 +64,9 @@ async function loadPopularThemes() {
 }
 
 async function loadDates() {
-    const response = await fetch("/available-dates");
+    const response = await fetch("/available-dates", {
+        credentials: "same-origin"
+    });
 
     if (!response.ok) {
         alert("날짜 목록을 불러오지 못했습니다.");
@@ -96,7 +102,9 @@ async function loadDates() {
 }
 
 async function loadThemes() {
-    const response = await fetch("/themes");
+    const response = await fetch("/themes", {
+        credentials: "same-origin"
+    });
 
     if (!response.ok) {
         alert("테마 목록을 불러오지 못했습니다.");
@@ -168,11 +176,12 @@ function goBackToSelectStep() {
     document.getElementById("select-section").classList.remove("hidden");
 
     selectedTime = null;
-    document.getElementById("reservation-name-input").value = "";
 }
 
 async function loadAvailableTimes() {
-    const response = await fetch(`/times?date=${selectedDate}&themeId=${selectedTheme.id}`);
+    const response = await fetch(`/times?date=${selectedDate}&themeId=${selectedTheme.id}`, {
+        credentials: "same-origin"
+    });
 
     if (!response.ok) {
         alert("예약 가능 시간을 불러오지 못했습니다.");
@@ -207,20 +216,12 @@ async function loadAvailableTimes() {
 }
 
 async function createReservation() {
-    const name = document.getElementById("reservation-name-input").value.trim();
-
     if (!selectedTime) {
         alert("방문 시간을 선택해주세요.");
         return;
     }
 
-    if (!name) {
-        alert("예약자 성함을 입력해주세요.");
-        return;
-    }
-
     const requestBody = {
-        name: name,
         date: selectedDate,
         timeId: selectedTime.id,
         themeId: selectedTheme.id
@@ -229,16 +230,20 @@ async function createReservation() {
     const response = await fetch("/reservations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(requestBody)
     });
 
-    if (!response.ok) {
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
         alert("예약에 실패했습니다.");
         return;
     }
 
     alert("예약이 완료되었습니다.");
-    location.href = `/reservation-lookup?name=${encodeURIComponent(name)}`;
+    location.href = "/reservation-lookup";
 }
 
 function formatTime(value) {

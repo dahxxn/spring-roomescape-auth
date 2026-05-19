@@ -2,39 +2,26 @@ let changingReservationId = null;
 let changingThemeId = null;
 let selectedChangeDate = null;
 
-document.addEventListener("DOMContentLoaded", () => {
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get("name");
-
-    if (name) {
-        document.getElementById("lookup-name-input").value = name;
-        searchReservations();
-    }
+document.addEventListener("DOMContentLoaded", async () => {
+    await initAuth();
+    searchReservations();
 });
 
 async function searchReservations() {
-    const nameInput = document.getElementById("lookup-name-input");
-    const name = nameInput.value.trim();
+    const response = await fetch("/reservations", {
+        credentials: "same-origin"
+    });
 
-    if (!name) {
-        alert("예약자 성함을 입력해주세요.");
-        return;
-    }
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
 
-    const response = await fetch(`/reservations?name=${encodeURIComponent(name)}`);
-
-    if (!response.ok) {
+    if (!checkedResponse.ok) {
         alert("예약 내역을 불러오지 못했습니다.");
         return;
     }
 
-    const reservations = await response.json();
-    const resultSection = document.getElementById("lookup-result-section");
-    const nameText = document.getElementById("lookup-name-text");
+    const reservations = await checkedResponse.json();
     const resultList = document.getElementById("reservation-result-list");
-
-    resultSection.classList.remove("hidden");
-    nameText.textContent = `"${name}"`;
     resultList.innerHTML = "";
 
     if (reservations.length === 0) {
@@ -53,7 +40,7 @@ async function searchReservations() {
                     예약 변경
                 </button>
                 <button class="cancel-button" type="button"
-                    onclick="cancelReservation(${reservation.id}, '${reservation.name}')">
+                    onclick="cancelReservation(${reservation.id})">
                     예약 취소
                 </button>
             </div>
@@ -65,7 +52,6 @@ async function searchReservations() {
                      alt="${reservation.theme.name}">
                 <div class="reservation-info">
                     <h3>${reservation.theme.name}</h3>
-                    <p>예약자: ${reservation.name}</p>
                     <p>날짜: ${formatDate(reservation.date)}</p>
                     <p>시간: ${formatTime(reservation.time)}</p>
                     <p>상태: ${isCanceled ? '취소됨' : '예약중'}</p>
@@ -85,7 +71,10 @@ async function openChangeModal(reservationId, themeId, currentDate) {
     changingThemeId = themeId;
     selectedChangeDate = currentDate;
 
-    const response = await fetch("/available-dates");
+    const response = await fetch("/available-dates", {
+        credentials: "same-origin"
+    });
+
     if (!response.ok) return;
     const availableDates = await response.json();
 
@@ -148,7 +137,10 @@ function closeChangeModal() {
 async function loadAvailableTimes(date, themeId) {
     if (!date || !themeId) return;
 
-    const response = await fetch(`/times?date=${date}&themeId=${themeId}`);
+    const response = await fetch(`/times?date=${date}&themeId=${themeId}`, {
+        credentials: "same-origin"
+    });
+
     if (!response.ok) return;
 
     const times = await response.json();
@@ -181,11 +173,15 @@ async function confirmChange() {
     const response = await fetch(`/reservations/${changingReservationId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ date: selectedChangeDate, timeId: Number(timeId) })
     });
 
-    if (!response.ok) {
-        const error = await response.json();
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
         errorMessage.textContent = error.message;
         errorMessage.classList.remove("hidden");
         return;
@@ -196,21 +192,24 @@ async function confirmChange() {
     await searchReservations();
 }
 
-async function cancelReservation(id, name) {
+async function cancelReservation(id) {
     if (!confirm("해당 예약을 취소하시겠습니까?")) return;
 
     const response = await fetch(`/reservations/${id}/cancel`, {
-        method: "PATCH"
+        method: "PATCH",
+        credentials: "same-origin"
     });
 
-    if (!response.ok) {
-        const error = await response.json();
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
         alert(error.message);
         return;
     }
 
     alert("예약이 취소되었습니다.");
-    document.getElementById("lookup-name-input").value = name;
     await searchReservations();
 }
 
