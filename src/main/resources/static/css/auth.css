@@ -1,0 +1,128 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #050607;
+    color: #f1f1f1;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.auth-container {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    background: #0b0d10;
+    border: 1px solid rgba(210, 180, 76, 0.28);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.auth-header {
+    padding: 32px 32px 24px;
+    text-align: center;
+    border-bottom: 1px solid #1e2228;
+}
+
+.logo {
+    color: #d2b44c;
+    font-family: Georgia, serif;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-decoration: none;
+}
+
+.auth-header p {
+    margin: 12px 0 0;
+    color: #b5b5b5;
+    font-size: 14px;
+}
+
+.auth-body {
+    padding: 32px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #a4a4a4;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.form-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    background: #07090c;
+    border: 1px solid #252932;
+    border-radius: 6px;
+    color: #f1f1f1;
+    font-size: 15px;
+    outline: none;
+}
+
+.form-input:focus {
+    border-color: #d2b44c;
+}
+
+.error-message {
+    margin-bottom: 16px;
+    color: #e25a5a;
+    font-size: 13px;
+}
+
+.hidden {
+    display: none;
+}
+
+.submit-button {
+    width: 100%;
+    height: 48px;
+    border: none;
+    border-radius: 6px;
+    background: #d6b943;
+    color: #090909;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.submit-button:hover {
+    background: #e4c74d;
+}
+
+.auth-link {
+    text-align: center;
+    color: #a4a4a4;
+    font-size: 14px;
+    margin: 0;
+}
+
+.auth-link a {
+    color: #d2b44c;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.auth-link a:hover {
+    text-decoration: underline;
+}
