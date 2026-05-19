@@ -13,11 +13,25 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import roomescape.common.dto.ErrorDetailDto;
 import roomescape.common.exception.ConflictException;
 import roomescape.common.exception.DomainValidationException;
+import roomescape.common.exception.ForbiddenException;
 import roomescape.common.exception.NotFoundException;
+import roomescape.common.exception.UnauthorizedException;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorDetailDto> handleUnauthorized(UnauthorizedException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorDetailDto.of(HttpStatus.UNAUTHORIZED.value(), e.getMessage()));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorDetailDto> handleForbidden(ForbiddenException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorDetailDto.of(HttpStatus.FORBIDDEN.value(), e.getMessage()));
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorDetailDto> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
         log.warn("Invalid request body: {}", e.getMessage());
