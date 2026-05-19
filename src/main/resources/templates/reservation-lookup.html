@@ -91,28 +91,18 @@
     <nav class="nav">
         <a href="/">예약하기</a>
         <a href="/reservation-lookup">예약 조회</a>
-        <a href="/admin-page">관리자</a>
+        <a id="login-link" href="/login-page">로그인</a>
+        <button id="logout-button" type="button" onclick="logout()">로그아웃</button>
     </nav>
 </header>
 
 <main class="container lookup-container">
     <section class="lookup-hero">
-        <h1>예약 조회</h1>
-        <p>예약자 성함을 입력하여 예약 내역을 확인하세요.</p>
+        <h1>내 예약</h1>
+        <p>나의 예약 내역을 확인하세요.</p>
     </section>
 
-    <section class="lookup-search-box">
-        <div class="search-input-box">
-            <span>⌕</span>
-            <input id="lookup-name-input" type="text" placeholder="예약자 성함을 입력하세요">
-        </div>
-        <button class="primary-button search" type="button" onclick="searchReservations()">
-            조회
-        </button>
-    </section>
-
-    <section id="lookup-result-section" class="lookup-result-section hidden">
-        <h2><span id="lookup-name-text"></span> 님의 예약 내역</h2>
+    <section id="lookup-result-section" class="lookup-result-section">
         <div id="reservation-result-list" class="reservation-result-list"></div>
     </section>
 </main>
@@ -132,6 +122,7 @@
     </div>
 </div>
 
+<script th:src="@{/js/auth.js}"></script>
 <script th:src="@{/js/reservation-lookup.js}"></script>
 </body>
 </html>

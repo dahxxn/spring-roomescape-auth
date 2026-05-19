@@ -12,7 +12,8 @@
     <nav class="nav">
         <a href="/">예약하기</a>
         <a href="/reservation-lookup">예약 조회</a>
-        <a href="/admin-page">관리자</a>
+        <a id="login-link" href="/login-page">로그인</a>
+        <button id="logout-button" type="button" onclick="logout()">로그아웃</button>
     </nav>
 </header>
 
@@ -148,6 +149,7 @@
     </section>
 </main>
 
+<script th:src="@{/js/auth.js}"></script>
 <script th:src="@{/js/admin.js}"></script>
 </body>
 </html>

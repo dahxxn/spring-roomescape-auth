@@ -44,6 +44,20 @@ body {
     color: #ffffff;
 }
 
+.nav button {
+    border: none;
+    background: transparent;
+    color: #a7a7a7;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.nav button:hover {
+    color: #ffffff;
+}
+
 .container {
     width: 1180px;
     margin: 52px auto 0;
