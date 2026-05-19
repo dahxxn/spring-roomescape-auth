@@ -2,7 +2,6 @@ package roomescape.reservation;
 
 import static org.hamcrest.Matchers.is;
 
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import java.time.LocalDate;
 import java.util.Map;
@@ -19,10 +18,9 @@ class ReservationIntegrationTest extends IntegrationTestSupport {
         Long themeId = createActiveTheme("테마1");
         LocalDate date = LocalDate.now().minusDays(1);
 
-        RestAssured.given().log().all()
+        givenUser().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
-                        "name", "브라운",
                         "date", date.toString(),
                         "timeId", timeId,
                         "themeId", themeId
@@ -40,9 +38,9 @@ class ReservationIntegrationTest extends IntegrationTestSupport {
         Long themeId = createActiveTheme("테마1");
         LocalDate date = LocalDate.now().plusDays(1);
 
-        createReservation("브라운", date, timeId, themeId);
+        createReservation("테스트유저", date, timeId, themeId);
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "name", "포비",
@@ -50,7 +48,7 @@ class ReservationIntegrationTest extends IntegrationTestSupport {
                         "timeId", timeId,
                         "themeId", themeId
                 ))
-                .when().post("/reservations")
+                .when().post("/admin/reservations")
                 .then().log().all()
                 .statusCode(409)
                 .body("message", is("해당 날짜/시간/테마는 이미 예약되었습니다."));
@@ -64,10 +62,20 @@ class ReservationIntegrationTest extends IntegrationTestSupport {
         Long themeId = createActiveTheme("테마1");
         LocalDate date = LocalDate.now().plusDays(1);
 
-        Long reservationId = createReservation("브라운", date, firstTimeId, themeId);
-        createReservation("포비", date, secondTimeId, themeId);
+        Long reservationId = createReservation("테스트유저", date, firstTimeId, themeId);
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
+                .contentType(ContentType.JSON)
+                .body(Map.of(
+                        "name", "포비",
+                        "date", date.toString(),
+                        "timeId", secondTimeId,
+                        "themeId", themeId
+                ))
+                .when().post("/admin/reservations")
+                .then().statusCode(201);
+
+        givenUser().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "date", date.toString(),
@@ -87,9 +95,9 @@ class ReservationIntegrationTest extends IntegrationTestSupport {
         Long themeId = createActiveTheme("테마1");
 
         LocalDate pastDate = LocalDate.now().minusDays(1);
-        Long reservationId = savePastReservation("브라운", pastDate, "10:00", themeId);
+        Long reservationId = savePastReservation("테스트유저", pastDate, "10:00", themeId);
 
-        RestAssured.given().log().all()
+        givenUser().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "date", LocalDate.now().plusDays(1).toString(),
@@ -108,9 +116,9 @@ class ReservationIntegrationTest extends IntegrationTestSupport {
         Long themeId = createActiveTheme("테마1");
 
         LocalDate pastDate = LocalDate.now().minusDays(1);
-        Long reservationId = savePastReservation("브라운", pastDate, "10:00", themeId);
+        Long reservationId = savePastReservation("테스트유저", pastDate, "10:00", themeId);
 
-        RestAssured.given().log().all()
+        givenUser().log().all()
                 .when().patch("/reservations/{id}/cancel", reservationId)
                 .then().log().all()
                 .statusCode(400)

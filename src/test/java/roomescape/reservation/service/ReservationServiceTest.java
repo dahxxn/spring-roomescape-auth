@@ -130,7 +130,7 @@ class ReservationServiceTest {
         Reservation savedReservation = reservationService.create(name, date1, reservationTime1.id(), theme1.id());
 
         // when
-        Reservation actual = reservationService.cancel(savedReservation.id());
+        Reservation actual = reservationService.cancel(savedReservation.id(), name);
 
         // then
         assertThat(actual.status()).isEqualTo(ReservationStatus.CANCELED);
@@ -147,7 +147,7 @@ class ReservationServiceTest {
         Reservation saved = reservationRepository.save(pastReservation);
 
         // when & then
-        assertThatThrownBy(() -> reservationService.cancel(saved.id()))
+        assertThatThrownBy(() -> reservationService.cancel(saved.id(), name))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -158,7 +158,7 @@ class ReservationServiceTest {
         Reservation saved = reservationService.create(name, date1, reservationTime1.id(), theme1.id());
 
         // when
-        Reservation actual = reservationService.change(saved.id(), date2, reservationTime2.id());
+        Reservation actual = reservationService.change(saved.id(), name,  date2, reservationTime2.id());
 
         // then
         assertThat(actual.date()).isEqualTo(date2);
@@ -174,7 +174,7 @@ class ReservationServiceTest {
         Reservation saved = reservationRepository.save(pastReservation);
 
         // when & then
-        assertThatThrownBy(() -> reservationService.change(saved.id(), date1, reservationTime1.id()))
+        assertThatThrownBy(() -> reservationService.change(saved.id(), name, date1, reservationTime1.id()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -186,7 +186,7 @@ class ReservationServiceTest {
         Reservation saved = reservationService.create(name, date1, reservationTime2.id(), theme1.id());
 
         // when & then
-        assertThatThrownBy(() -> reservationService.change(saved.id(), date1, reservationTime1.id()))
+        assertThatThrownBy(() -> reservationService.change(saved.id(), name,date1, reservationTime1.id()))
                 .isInstanceOf(ConflictException.class);
     }
 
@@ -197,7 +197,7 @@ class ReservationServiceTest {
         Reservation saved = reservationService.create(name, date1, reservationTime1.id(), theme1.id());
 
         // when & then
-        assertThat(reservationService.change(saved.id(), date1, reservationTime1.id()))
+        assertThat(reservationService.change(saved.id(), name, date1, reservationTime1.id()))
                 .isNotNull();
     }
 
@@ -209,7 +209,7 @@ class ReservationServiceTest {
         closedDateService.register(date2);
 
         // when & then
-        assertThatThrownBy(() -> reservationService.change(saved.id(), date2, reservationTime1.id()))
+        assertThatThrownBy(() -> reservationService.change(saved.id(), name, date2, reservationTime1.id()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -220,7 +220,7 @@ class ReservationServiceTest {
         Long wrongId = Long.MIN_VALUE;
 
         // when & then
-        assertThatThrownBy(() -> reservationService.change(wrongId, date1, reservationTime1.id()))
+        assertThatThrownBy(() -> reservationService.change(wrongId, name, date1, reservationTime1.id()))
                 .isInstanceOf(NotFoundException.class);
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
                 "spring.sql.init.data-locations=",
@@ -25,13 +26,48 @@ public abstract class IntegrationTestSupport {
     @Autowired
     protected JdbcTemplate jdbcTemplate;
 
+    private String adminSessionId;
+    private String userSessionId;
+
     @BeforeEach
     void setUpRestAssured() {
         RestAssured.port = port;
+        setUpMembers();
+        adminSessionId = login("admin", "admin1234");
+        userSessionId = login("user01", "user1234");
+    }
+
+    private void setUpMembers() {
+        jdbcTemplate.update(
+                "INSERT INTO member (name, login_id, password, role) VALUES (?, ?, ?, ?)",
+                "관리자", "admin", "admin1234", "ADMIN"
+        );
+        jdbcTemplate.update(
+                "INSERT INTO member (name, login_id, password, role) VALUES (?, ?, ?, ?)",
+                "테스트유저", "user01", "user1234", "USER"
+        );
+    }
+
+    private String login(String loginId, String password) {
+        return RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("loginId", loginId, "password", password))
+                .when().post("/login")
+                .then()
+                .statusCode(200)
+                .extract().cookie("JSESSIONID");
+    }
+
+    protected io.restassured.specification.RequestSpecification givenAdmin() {
+        return RestAssured.given().cookie("JSESSIONID", adminSessionId);
+    }
+
+    protected io.restassured.specification.RequestSpecification givenUser() {
+        return RestAssured.given().cookie("JSESSIONID", userSessionId);
     }
 
     protected Long createTime(String startAt) {
-        return RestAssured.given()
+        return givenAdmin()
                 .contentType(ContentType.JSON)
                 .body(Map.of("startAt", startAt))
                 .when().post("/admin/times")
@@ -41,7 +77,7 @@ public abstract class IntegrationTestSupport {
     }
 
     protected Long createTheme(String name) {
-        return RestAssured.given()
+        return givenAdmin()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "name", name,
@@ -56,22 +92,19 @@ public abstract class IntegrationTestSupport {
 
     protected Long createActiveTheme(String name) {
         Long themeId = createTheme(name);
-
-        RestAssured.given()
+        givenAdmin()
                 .contentType(ContentType.JSON)
                 .body(Map.of("isActive", true))
                 .when().patch("/admin/themes/{id}", themeId)
                 .then()
                 .statusCode(200);
-
         return themeId;
     }
 
     protected Long createReservation(String name, LocalDate date, Long timeId, Long themeId) {
-        return RestAssured.given()
+        return givenUser()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
-                        "name", name,
                         "date", date.toString(),
                         "timeId", timeId,
                         "themeId", themeId
@@ -85,13 +118,8 @@ public abstract class IntegrationTestSupport {
     protected Long savePastReservation(String name, LocalDate date, String startAt, Long themeId) {
         jdbcTemplate.update(
                 "INSERT INTO reservation (name, date, start_at, theme_id, status) VALUES (?, ?, ?, ?, ?)",
-                name,
-                date,
-                startAt,
-                themeId,
-                "RESERVED"
+                name, date, startAt, themeId, "RESERVED"
         );
-
         return jdbcTemplate.queryForObject("SELECT MAX(id) FROM reservation", Long.class);
     }
 }

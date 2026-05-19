@@ -2,7 +2,6 @@ package roomescape.time;
 
 import static org.hamcrest.Matchers.is;
 
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import java.time.LocalDate;
 import java.util.Map;
@@ -15,7 +14,7 @@ class AdminReservationTimeApiTest extends IntegrationTestSupport {
     @Test
     @DisplayName("관리자는 예약 시간을 생성할 수 있다")
     void createReservationTime() {
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of("startAt", "10:00"))
                 .when().post("/admin/times")
@@ -29,7 +28,7 @@ class AdminReservationTimeApiTest extends IntegrationTestSupport {
     void findReservationTimes() {
         createTime("10:00");
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .when().get("/admin/times")
                 .then().log().all()
                 .statusCode(200)
@@ -42,7 +41,7 @@ class AdminReservationTimeApiTest extends IntegrationTestSupport {
     void deleteReservationTime() {
         Long timeId = createTime("10:00");
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .when().delete("/admin/times/{id}", timeId)
                 .then().log().all()
                 .statusCode(204);
@@ -55,9 +54,9 @@ class AdminReservationTimeApiTest extends IntegrationTestSupport {
         Long themeId = createActiveTheme("테마1");
         LocalDate date = LocalDate.now().plusDays(1);
 
-        createReservation("브라운", date, timeId, themeId);
+        createReservation("테스트유저", date, timeId, themeId);
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .when().delete("/admin/times/{id}", timeId)
                 .then().log().all()
                 .statusCode(409)

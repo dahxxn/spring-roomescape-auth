@@ -2,7 +2,6 @@ package roomescape.theme;
 
 import static org.hamcrest.Matchers.is;
 
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -14,7 +13,7 @@ class AdminThemeApiTest extends IntegrationTestSupport {
     @Test
     @DisplayName("관리자는 테마를 생성할 수 있다")
     void createTheme() {
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "name", "테마1",
@@ -35,7 +34,7 @@ class AdminThemeApiTest extends IntegrationTestSupport {
     void findThemes() {
         createTheme("테마1");
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .when().get("/admin/themes")
                 .then().log().all()
                 .statusCode(200)
@@ -48,7 +47,7 @@ class AdminThemeApiTest extends IntegrationTestSupport {
     void findTheme() {
         Long themeId = createTheme("테마1");
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .when().get("/admin/themes/{id}", themeId)
                 .then().log().all()
                 .statusCode(200)
@@ -61,7 +60,7 @@ class AdminThemeApiTest extends IntegrationTestSupport {
     void updateThemeStatus() {
         Long themeId = createTheme("테마1");
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of("isActive", true))
                 .when().patch("/admin/themes/{id}", themeId)

@@ -28,6 +28,8 @@ class AvailableTimeIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    private String userSessionId;
+
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
@@ -36,6 +38,7 @@ class AvailableTimeIntegrationTest {
         jdbcTemplate.execute("TRUNCATE TABLE reservation_time RESTART IDENTITY");
         jdbcTemplate.execute("TRUNCATE TABLE closed_date RESTART IDENTITY");
         jdbcTemplate.execute("TRUNCATE TABLE theme RESTART IDENTITY");
+        jdbcTemplate.execute("TRUNCATE TABLE member RESTART IDENTITY");
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
 
         jdbcTemplate.update("INSERT INTO reservation_time (start_at) VALUES (?)", "10:00");
@@ -43,6 +46,18 @@ class AvailableTimeIntegrationTest {
         jdbcTemplate.update("INSERT INTO reservation_time (start_at) VALUES (?)", "14:00");
         jdbcTemplate.update("INSERT INTO theme (name, description, thumbnail_url, is_active) VALUES (?, ?, ?, ?)",
                 "공포", "공포 테마", "https://horror.jpg", true);
+        jdbcTemplate.update(
+                "INSERT INTO member (name, login_id, password, role) VALUES (?, ?, ?, ?)",
+                "테스트유저", "user01", "user1234", "USER"
+        );
+
+        userSessionId = RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("loginId", "user01", "password", "user1234"))
+                .when().post("/login")
+                .then()
+                .statusCode(200)
+                .extract().cookie("JSESSIONID");
     }
 
     @Test
@@ -59,15 +74,14 @@ class AvailableTimeIntegrationTest {
 
         assertThat(beforeTimes).hasSize(3);
 
-        Map<String, Object> reservation = new HashMap<>();
-        reservation.put("name", "한다");
-        reservation.put("date", date.toString());
-        reservation.put("timeId", 1);
-        reservation.put("themeId", 1);
-
-        RestAssured.given().log().all()
+        RestAssured.given()
+                .cookie("JSESSIONID", userSessionId)
                 .contentType(ContentType.JSON)
-                .body(reservation)
+                .body(Map.of(
+                        "date", date.toString(),
+                        "timeId", 1,
+                        "themeId", 1
+                ))
                 .when().post("/reservations")
                 .then().log().all()
                 .statusCode(201);

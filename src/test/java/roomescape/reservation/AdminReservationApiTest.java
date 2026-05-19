@@ -2,7 +2,6 @@ package roomescape.reservation;
 
 import static org.hamcrest.Matchers.is;
 
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import java.time.LocalDate;
 import java.util.Map;
@@ -21,12 +20,12 @@ class AdminReservationApiTest extends IntegrationTestSupport {
 
         createReservation("브라운", date, timeId, themeId);
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .when().get("/admin/reservations")
                 .then().log().all()
                 .statusCode(200)
                 .body("size()", is(1))
-                .body("[0].name", is("브라운"))
+                .body("[0].name", is("테스트유저"))
                 .body("[0].date", is(date.toString()))
                 .body("[0].time", is("10:00:00"))
                 .body("[0].theme.name", is("테마1"));
@@ -39,7 +38,7 @@ class AdminReservationApiTest extends IntegrationTestSupport {
         Long themeId = createActiveTheme("테마1");
         LocalDate date = LocalDate.now().plusDays(1);
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "name", "브라운",
@@ -66,7 +65,7 @@ class AdminReservationApiTest extends IntegrationTestSupport {
 
         Long reservationId = createReservation("브라운", date, timeId, themeId);
 
-        RestAssured.given().log().all()
+        givenAdmin().log().all()
                 .when().patch("/admin/reservations/{id}/cancel", reservationId)
                 .then().log().all()
                 .statusCode(200)

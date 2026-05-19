@@ -19,10 +19,9 @@ class ReservationApiTest extends IntegrationTestSupport {
         Long themeId = createActiveTheme("테마1");
         LocalDate date = LocalDate.now().plusDays(1);
 
-        RestAssured.given().log().all()
+        givenUser().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
-                        "name", "브라운",
                         "date", date.toString(),
                         "timeId", timeId,
                         "themeId", themeId
@@ -30,7 +29,7 @@ class ReservationApiTest extends IntegrationTestSupport {
                 .when().post("/reservations")
                 .then().log().all()
                 .statusCode(201)
-                .body("name", is("브라운"))
+                .body("name", is("테스트유저"))
                 .body("date", is(date.toString()))
                 .body("time", is("10:00:00"))
                 .body("theme.name", is("테마1"))
@@ -38,21 +37,20 @@ class ReservationApiTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("사용자는 이름으로 본인의 예약 목록을 조회할 수 있다")
+    @DisplayName("사용자는 자신의 예약 목록을 조회할 수 있다")
     void findMyReservations() {
         Long timeId = createTime("10:00");
         Long themeId = createActiveTheme("테마1");
         LocalDate date = LocalDate.now().plusDays(1);
 
-        createReservation("브라운", date, timeId, themeId);
+        createReservation("테스트유저", date, timeId, themeId);
 
-        RestAssured.given().log().all()
-                .queryParam("name", "브라운")
+        givenUser().log().all()
                 .when().get("/reservations")
                 .then().log().all()
                 .statusCode(200)
                 .body("size()", is(1))
-                .body("[0].name", is("브라운"))
+                .body("[0].name", is("테스트유저"))
                 .body("[0].date", is(date.toString()))
                 .body("[0].time", is("10:00:00"))
                 .body("[0].theme.name", is("테마1"))
@@ -69,9 +67,9 @@ class ReservationApiTest extends IntegrationTestSupport {
         LocalDate beforeDate = LocalDate.now().plusDays(1);
         LocalDate afterDate = LocalDate.now().plusDays(2);
 
-        Long reservationId = createReservation("브라운", beforeDate, firstTimeId, themeId);
+        Long reservationId = createReservation("테스트유저", beforeDate, firstTimeId, themeId);
 
-        RestAssured.given().log().all()
+        givenUser().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "date", afterDate.toString(),
@@ -93,9 +91,9 @@ class ReservationApiTest extends IntegrationTestSupport {
         Long themeId = createActiveTheme("테마1");
         LocalDate date = LocalDate.now().plusDays(1);
 
-        Long reservationId = createReservation("브라운", date, timeId, themeId);
+        Long reservationId = createReservation("테스트유저", date, timeId, themeId);
 
-        RestAssured.given().log().all()
+        givenUser().log().all()
                 .when().patch("/reservations/{id}/cancel", reservationId)
                 .then().log().all()
                 .statusCode(200)
@@ -110,18 +108,16 @@ class ReservationApiTest extends IntegrationTestSupport {
         Long themeId = createActiveTheme("테마1");
         LocalDate date = LocalDate.now().plusDays(1);
 
-        RestAssured.given().log().all()
+        givenUser().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
-                        "name", "",
                         "date", date.toString(),
-                        "timeId", timeId,
-                        "themeId", themeId
+                        "timeId", timeId
+                        // themeId 누락
                 ))
                 .when().post("/reservations")
                 .then().log().all()
-                .statusCode(400)
-                .body("message", is("예약자 이름은 필수 항목입니다."));
+                .statusCode(400);
     }
 
     @Test
@@ -130,7 +126,7 @@ class ReservationApiTest extends IntegrationTestSupport {
         Long timeId = createTime("10:00");
         LocalDate date = LocalDate.now().plusDays(1);
 
-        RestAssured.given().log().all()
+        givenUser().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "date", date.toString(),
@@ -145,10 +141,29 @@ class ReservationApiTest extends IntegrationTestSupport {
     @Test
     @DisplayName("존재하지 않는 예약은 취소할 수 없다")
     void cannotCancelNotFoundReservation() {
-        RestAssured.given().log().all()
+        givenUser().log().all()
                 .when().patch("/reservations/{id}/cancel", 999L)
                 .then().log().all()
                 .statusCode(404)
                 .body("message", is("존재하지 않는 예약입니다."));
+    }
+
+    @Test
+    @DisplayName("로그인하지 않은 사용자는 예약을 생성할 수 없다")
+    void cannotCreateReservationWithoutLogin() {
+        Long timeId = createTime("10:00");
+        Long themeId = createActiveTheme("테마1");
+        LocalDate date = LocalDate.now().plusDays(1);
+
+        RestAssured.given().log().all()
+                .contentType(ContentType.JSON)
+                .body(Map.of(
+                        "date", date.toString(),
+                        "timeId", timeId,
+                        "themeId", themeId
+                ))
+                .when().post("/reservations")
+                .then().log().all()
+                .statusCode(401);
     }
 }
