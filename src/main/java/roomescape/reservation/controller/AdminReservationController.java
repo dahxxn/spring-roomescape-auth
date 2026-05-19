@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import roomescape.auth.annotation.AdminRequired;
+import roomescape.auth.annotation.LoginRequired;
 import roomescape.reservation.dto.request.ReservationSaveDto;
 import roomescape.reservation.dto.response.ReservationDetailDto;
 import roomescape.reservation.service.ReservationService;
@@ -27,6 +29,8 @@ public class AdminReservationController {
     }
 
     @GetMapping
+    @LoginRequired
+    @AdminRequired
     @Operation(summary = "Read all reservations", description = "예약 전체 목록을 조회하는 api")
     public ResponseEntity<List<ReservationDetailDto>> getReservations() {
         List<ReservationDetailDto> responseData = reservationService.findAll().stream()
@@ -36,6 +40,8 @@ public class AdminReservationController {
     }
 
     @PostMapping
+    @LoginRequired
+    @AdminRequired
     @Operation(summary = "Create a reservation", description = "예약을 생성하는 api")
     public ResponseEntity<ReservationDetailDto> createReservation(@Valid @RequestBody ReservationSaveDto dto) {
         ReservationDetailDto responseData = ReservationDetailDto.from(
@@ -44,9 +50,11 @@ public class AdminReservationController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @LoginRequired
+    @AdminRequired
     @Operation(summary = "Cancel a reservation", description = "예약을 취소하는 api")
     public ResponseEntity<ReservationDetailDto> cancelReservation(@PathVariable Long id) {
-        ReservationDetailDto responseData = ReservationDetailDto.from(reservationService.cancel(id));
+        ReservationDetailDto responseData = ReservationDetailDto.from(reservationService.cancelByAdmin(id));
         return ResponseEntity.ok(responseData);
     }
 }

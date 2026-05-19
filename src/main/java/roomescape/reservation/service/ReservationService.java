@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.closeddate.repository.ClosedDateRepository;
 import roomescape.common.exception.ConflictException;
+import roomescape.common.exception.ForbiddenException;
 import roomescape.common.exception.NotFoundException;
 import roomescape.reservation.domain.Reservation;
 import roomescape.reservation.domain.ReservationStatus;
@@ -37,7 +38,6 @@ public class ReservationService {
         this.themeRepository = themeRepository;
     }
 
-
     @Transactional(readOnly = true)
     public List<Reservation> findAll() {
         return reservationRepository.findAll();
@@ -64,10 +64,21 @@ public class ReservationService {
     }
 
     @Transactional
-    public Reservation cancel(Long id) {
+    public Reservation cancel(Long id, String loginMemberName) {
+        Reservation reservation = findReservationOrThrow(id);
+        validateReservationOwner(reservation, loginMemberName);
+        validateNotPastReservation(reservation, "취소");
+        return cancelReservation(reservation);
+    }
+
+    @Transactional
+    public Reservation cancelByAdmin(Long id) {
         Reservation reservation = findReservationOrThrow(id);
         validateNotPastReservation(reservation, "취소");
+        return cancelReservation(reservation);
+    }
 
+    private Reservation cancelReservation(Reservation reservation) {
         Reservation canceledReservation = reservation.cancel();
         Reservation updatedReservation = reservationRepository.updateStatus(canceledReservation);
         log.info("Reservation canceled: id={}", updatedReservation.id());
@@ -75,8 +86,9 @@ public class ReservationService {
     }
 
     @Transactional
-    public Reservation change(Long id, LocalDate newDate, Long newTimeId) {
+    public Reservation change(Long id, String loginMemberName, LocalDate newDate, Long newTimeId) {
         Reservation reservation = findReservationOrThrow(id);
+        validateReservationOwner(reservation, loginMemberName);
         validateNotPastReservation(reservation, "변경");
 
         LocalTime newTime = findReservationTimeOrThrow(newTimeId).startAt();
@@ -85,8 +97,17 @@ public class ReservationService {
 
         Reservation rescheduledReservation = reservation.rescheduled(newDate, newTime);
         Reservation updatedReservation = reservationRepository.updateDateAndTime(rescheduledReservation);
-        log.info("Reservation changed: id={}, date={}, time={}", updatedReservation.id(), updatedReservation.date(), updatedReservation.time());
+        log.info("Reservation changed: id={}, date={}, time={}",
+                updatedReservation.id(), updatedReservation.date(), updatedReservation.time());
         return updatedReservation;
+    }
+
+    private void validateReservationOwner(Reservation reservation, String loginMemberName) {
+        if (!reservation.name().equals(loginMemberName)) {
+            log.warn("Forbidden reservation access: reservationId={}, owner={}, loginMember={}",
+                    reservation.id(), reservation.name(), loginMemberName);
+            throw new ForbiddenException("본인의 예약만 변경할 수 있습니다.");
+        }
     }
 
     @NonNull
@@ -146,7 +167,8 @@ public class ReservationService {
 
     private void validateUserHasNoReservationAtSameTime(String name, LocalDate date, ReservationTime time) {
         if (reservationRepository.existsByNameAndDateAndTime(name, date, time.startAt())) {
-            log.warn("User already has a reservation at the same time: name={}, date={}, time={}", name, date, time.startAt());
+            log.warn("User already has a reservation at the same time: name={}, date={}, time={}",
+                    name, date, time.startAt());
             throw new ConflictException("동일한 날짜와 시간에 예약이 존재합니다.");
         }
     }
