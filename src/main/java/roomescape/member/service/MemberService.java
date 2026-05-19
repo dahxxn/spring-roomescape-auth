@@ -4,6 +4,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import roomescape.common.exception.ConflictException;
 import roomescape.common.exception.NotFoundException;
 import roomescape.common.exception.UnauthorizedException;
 import roomescape.member.domain.Member;
@@ -20,9 +21,7 @@ public class MemberService {
 
     @Transactional
     public Member login(String loginId, String password) {
-        Member member = memberRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new UnauthorizedException("아이디 또는 비밀번호가 올바르지 않습니다."));
-
+        Member member = findByLoginId(loginId);
         if (!member.password().equals(password)) {
             throw new UnauthorizedException("아이디 또는 비밀번호가 올바르지 않습니다.");
         }
@@ -33,6 +32,14 @@ public class MemberService {
     @Transactional(readOnly = true)
     public Optional<Member> findById(Long id) {
         return memberRepository.findById(id);
+    }
+
+    @Transactional
+    public Member join(String name, String loginId, String password) {
+        if (memberRepository.findByLoginId(loginId).isPresent()) {
+            throw new ConflictException("이미 사용 중인 아이디입니다.");
+        }
+        return memberRepository.save(Member.create(name, loginId, password));
     }
 
     @NonNull
