@@ -3,11 +3,13 @@ package roomescape.auth.token;
 import static io.jsonwebtoken.security.Keys.hmacShaKeyFor;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import java.sql.Date;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import roomescape.common.exception.UnauthorizedException;
 
 @Component
 public class TokenProvider {
@@ -35,12 +37,19 @@ public class TokenProvider {
     }
 
     public Long extractMemberId(String token){
-        //TODO: 토큰 검증 후 memberId 추출
-        return null;
+        Claims claims = parseClaims(token);
+        return Long.valueOf(claims.getSubject());
     }
 
-    private boolean validateToken(String token){
-        //TODO: 유효한 토큰인지 확인
-        return false;
+    private Claims parseClaims(String token){
+        try{
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        }catch(RuntimeException exception){
+            throw new UnauthorizedException("유효하지 않은 토큰입니다.");
+        }
     }
 }
