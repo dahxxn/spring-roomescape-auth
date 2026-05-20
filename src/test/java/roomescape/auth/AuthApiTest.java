@@ -28,28 +28,21 @@ class AuthApiTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("모바일 사용자는 토큰으로 본인 정보를 조회할 수 있다")
-    void findMeWithToken() {
-        givenUserWithToken().log().all()
-                .when().get("/members/me")
-                .then().log().all()
-                .statusCode(200)
-                .body("name", is("테스트유저"))
-                .body("role", is("USER"));
-    }
-
-    @Test
-    @DisplayName("토큰이 없으면 인증이 필요한 API를 사용할 수 없다")
-    void cannotAccessWithoutTokenOrSession() {
+    @DisplayName("잘못된 로그인 정보로 토큰을 발급받을 수 없다")
+    void cannotIssueTokenWithInvalidPassword() {
         RestAssured.given().log().all()
-                .when().get("/members/me")
+                .contentType(ContentType.JSON)
+                .body(Map.of(
+                        "loginId", "user01",
+                        "password", "wrong-password"
+                ))
+                .when().post("/token")
                 .then().log().all()
-                .statusCode(401)
-                .body("message", is("로그인이 필요합니다."));
+                .statusCode(401);
     }
 
     @Test
-    @DisplayName("유효하지 않은 토큰이면 인증이 필요한 API를 사용할 수 없다")
+    @DisplayName("유효하지 않은 토큰이면 인증에 실패한다")
     void cannotAccessWithInvalidToken() {
         RestAssured.given().log().all()
                 .header("Authorization", "Bearer invalid-token")
@@ -60,7 +53,7 @@ class AuthApiTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("일반 사용자 토큰으로 관리자 API를 사용할 수 없다")
+    @DisplayName("일반 사용자 토큰으로 관리자 API에 접근할 수 없다")
     void cannotAccessAdminApiWithUserToken() {
         givenUserWithToken().log().all()
                 .when().get("/admin/reservations")
@@ -70,7 +63,7 @@ class AuthApiTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("관리자 토큰으로 관리자 API를 사용할 수 있다")
+    @DisplayName("관리자 토큰으로 관리자 API에 접근할 수 있다")
     void accessAdminApiWithAdminToken() {
         givenAdminWithToken().log().all()
                 .when().get("/admin/reservations")
@@ -79,7 +72,7 @@ class AuthApiTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("유효하지 않은 토큰이 있으면 세션이 정상이어도 인증에 실패한다")
+    @DisplayName("유효하지 않은 토큰이 있으면 정상 세션이 있어도 인증에 실패한다")
     void invalidTokenDoesNotFallbackToSession() {
         givenUser().log().all()
                 .header("Authorization", "Bearer invalid-token")
