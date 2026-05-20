@@ -5,31 +5,44 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import roomescape.auth.annotation.AdminRequired;
 import roomescape.auth.annotation.LoginRequired;
+import roomescape.auth.token.TokenProvider;
 import roomescape.common.dto.ErrorDetailDto;
 import roomescape.member.service.MemberService;
 
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
-    private static final String SESSION_KEY = "loginMemberId";
 
+    private static final String LOGIN_MEMBER_ID_KEY = "loginMemberId";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+
+    private final TokenProvider tokenProvider;
     private final ObjectMapper objectMapper;
     private final MemberService memberService;
 
-    public AuthInterceptor(ObjectMapper objectMapper, MemberService memberService) {
+    public AuthInterceptor(
+            TokenProvider tokenProvider,
+            ObjectMapper objectMapper,
+            MemberService memberService
+    ) {
+        this.tokenProvider = tokenProvider;
         this.objectMapper = objectMapper;
         this.memberService = memberService;
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request,
-                             HttpServletResponse response,
-                             Object handler) throws IOException {
+    public boolean preHandle(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull Object handler
+    ) throws IOException {
         if (!(handler instanceof HandlerMethod method)) {
             return true;
         }
@@ -41,10 +54,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        HttpSession session = request.getSession(false);
-        Long loginMemberId = (session != null)
-                ? (Long) session.getAttribute(SESSION_KEY)
-                : null;
+        Long loginMemberId = resolveMemberId(request);
 
         if (loginMemberId == null) {
             writeUnauthorized(response);
@@ -56,8 +66,38 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        request.setAttribute(SESSION_KEY, loginMemberId);
+        request.setAttribute(LOGIN_MEMBER_ID_KEY, loginMemberId);
         return true;
+    }
+
+    private Long resolveMemberId(HttpServletRequest request) {
+        Long memberIdFromToken = resolveMemberIdFromToken(request);
+
+        if (memberIdFromToken != null) {
+            return memberIdFromToken;
+        }
+
+        return resolveMemberIdFromSession(request);
+    }
+
+    private Long resolveMemberIdFromToken(HttpServletRequest request) {
+        String authHeader = request.getHeader(AUTHORIZATION_HEADER);
+
+        if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
+            return null;
+        }
+
+        String token = authHeader.substring(BEARER_PREFIX.length());
+        return tokenProvider.extractMemberId(token);
+    }
+
+    private Long resolveMemberIdFromSession(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+
+        if (session == null) {
+            return null;
+        }
+        return (Long) session.getAttribute(LOGIN_MEMBER_ID_KEY);
     }
 
     private boolean isAdmin(Long memberId) {
