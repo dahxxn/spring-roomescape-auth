@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import roomescape.auth.annotation.LoginMember;
 import roomescape.auth.annotation.LoginRequired;
-import roomescape.auth.dto.LoginMemberDto;
+import roomescape.auth.dto.request.LoginMemberDto;
 import roomescape.member.dto.request.MemberJoinDto;
 import roomescape.member.service.MemberService;
 

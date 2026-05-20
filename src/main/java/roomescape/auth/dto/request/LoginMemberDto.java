@@ -1,4 +1,4 @@
-package roomescape.auth.dto;
+package roomescape.auth.dto.request;
 
 import roomescape.member.domain.Member;
 import roomescape.member.domain.MemberRole;
