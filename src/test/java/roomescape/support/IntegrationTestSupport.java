@@ -29,12 +29,19 @@ public abstract class IntegrationTestSupport {
     private String adminSessionId;
     private String userSessionId;
 
+    private String adminToken;
+    private String userToken;
+
     @BeforeEach
     void setUpRestAssured() {
         RestAssured.port = port;
         setUpMembers();
+
         adminSessionId = login("admin", "admin1234");
         userSessionId = login("user01", "user1234");
+
+        adminToken = issueToken("admin", "admin1234");
+        userToken = issueToken("user01", "user1234");
     }
 
     private void setUpMembers() {
@@ -64,6 +71,26 @@ public abstract class IntegrationTestSupport {
 
     protected io.restassured.specification.RequestSpecification givenUser() {
         return RestAssured.given().cookie("JSESSIONID", userSessionId);
+    }
+
+    private String issueToken(String loginId, String password) {
+        return RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("loginId", loginId, "password", password))
+                .when().post("/token")
+                .then()
+                .statusCode(200)
+                .extract().jsonPath().getString("accessToken");
+    }
+
+    protected io.restassured.specification.RequestSpecification givenAdminWithToken() {
+        return RestAssured.given()
+                .header("Authorization", "Bearer " + adminToken);
+    }
+
+    protected io.restassured.specification.RequestSpecification givenUserWithToken() {
+        return RestAssured.given()
+                .header("Authorization", "Bearer " + userToken);
     }
 
     protected Long createTime(String startAt) {
