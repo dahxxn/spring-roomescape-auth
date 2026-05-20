@@ -3,6 +3,8 @@ package roomescape.auth.token;
 import static io.jsonwebtoken.security.Keys.hmacShaKeyFor;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import io.jsonwebtoken.Jwts;
+import java.sql.Date;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -21,8 +23,15 @@ public class TokenProvider {
     }
 
     public String createToken(Long memberId){
-        //TODO: memberId를 담은 JWT 생성
-        return null;
+        Date now = new Date(System.currentTimeMillis());
+        Date expiredAt = new Date(now.getTime() + expirationTime);
+
+        return Jwts.builder()
+                .subject(memberId.toString())
+                .issuedAt(now)
+                .expiration(expiredAt)
+                .signWith(secretKey)
+                .compact();
     }
 
     public Long extractMemberId(String token){
