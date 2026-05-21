@@ -12,8 +12,10 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import roomescape.auth.annotation.AdminRequired;
 import roomescape.auth.annotation.LoginRequired;
+import roomescape.auth.annotation.ManagerRequired;
 import roomescape.auth.token.TokenProvider;
 import roomescape.common.dto.ErrorDetailDto;
+import roomescape.member.domain.MemberRole;
 import roomescape.member.service.MemberService;
 
 @Component
@@ -49,8 +51,9 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         boolean loginRequired = method.hasMethodAnnotation(LoginRequired.class);
         boolean adminRequired = method.hasMethodAnnotation(AdminRequired.class);
+        boolean managerRequired = method.hasMethodAnnotation(ManagerRequired.class);
 
-        if (!loginRequired && !adminRequired) {
+        if (!loginRequired && !adminRequired && !managerRequired) {
             return true;
         }
 
@@ -62,6 +65,11 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         if (adminRequired && !isAdmin(loginMemberId)) {
+            writeForbidden(response);
+            return false;
+        }
+
+        if (managerRequired && !isManager(loginMemberId)) {
             writeForbidden(response);
             return false;
         }
@@ -100,9 +108,15 @@ public class AuthInterceptor implements HandlerInterceptor {
         return (Long) session.getAttribute(LOGIN_MEMBER_ID_KEY);
     }
 
+    private boolean isManager(Long memberId) {
+        return memberService.findById(memberId)
+                .map(member -> member.role() == MemberRole.MANAGER)
+                .orElse(false);
+    }
+
     private boolean isAdmin(Long memberId) {
         return memberService.findById(memberId)
-                .map(member -> member.role().name().equals("ADMIN"))
+                .map(member -> member.role() == MemberRole.ADMIN)
                 .orElse(false);
     }
 
