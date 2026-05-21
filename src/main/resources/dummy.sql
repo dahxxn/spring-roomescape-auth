@@ -1,8 +1,8 @@
 MERGE INTO member (name, login_id, password, role) KEY (login_id)
-    VALUES ('강남점 관리자', 'admin1', 'admin1234', 'ADMIN');
+    VALUES ('강남점 관리자', 'admin1', 'admin1234', 'MANAGER');
 
 MERGE INTO member (name, login_id, password, role) KEY (login_id)
-    VALUES ('잠실점 관리자', 'admin2', 'admin1234', 'ADMIN');
+    VALUES ('잠실점 관리자', 'admin2', 'admin1234', 'MANAGER');
 
 MERGE INTO member (name, login_id, password) KEY (login_id)
     VALUES ('테스트유저', 'user01', 'user1234');
