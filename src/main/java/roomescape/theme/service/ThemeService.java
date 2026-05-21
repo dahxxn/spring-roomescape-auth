@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.exception.NotFoundException;
 import roomescape.reservation.domain.ReservationStatus;
 import roomescape.store.domain.Store;
-import roomescape.store.service.StoreService;
+import roomescape.store.repository.StoreRepository;
 import roomescape.theme.domain.Theme;
 import roomescape.theme.repository.ThemeRepository;
 
@@ -17,11 +17,11 @@ import roomescape.theme.repository.ThemeRepository;
 @Service
 public class ThemeService {
     private final ThemeRepository themeRepository;
-    private final StoreService storeService;
+    private final StoreRepository storeRepository;
 
-    public ThemeService(ThemeRepository themeRepository, StoreService storeService) {
+    public ThemeService(ThemeRepository themeRepository, StoreRepository storeRepository) {
         this.themeRepository = themeRepository;
-        this.storeService = storeService;
+        this.storeRepository = storeRepository;
     }
 
     @Transactional(readOnly = true)
@@ -49,7 +49,7 @@ public class ThemeService {
 
     @Transactional
     public Theme register(Long storeId, String name, String description, String thumbnailUrl) {
-        Store store = storeService.findStore(storeId);
+        Store store = storeRepository.findById(storeId).orElseThrow(() -> new NotFoundException("해당 매장이 존재하지 않습니다."));
         Theme theme = themeRepository.save(Theme.create(store, name, description, thumbnailUrl));
         log.info("Theme registered: id={}, storeId={}, name={}", theme.id(), theme.store().id(), theme.name());
         return theme;
