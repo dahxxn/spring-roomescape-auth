@@ -6,5 +6,8 @@ import roomescape.store.domain.Store;
 
 public interface StoreRepository {
     Optional<Store> findById(Long id);
+
     Optional<Store> findByMemberId(Long memberId);
+
+    List<Store> findAll();
 }

@@ -182,4 +182,47 @@ public class JdbcThemeRepository implements ThemeRepository {
 
         return jdbcTemplate.query(sql, params, rowMapper);
     }
+
+    @Override
+    public List<Theme> findAllByStoreId(Long storeId) {
+        String sql = """
+                SELECT
+                    t.id AS theme_id,
+                    t.name AS theme_name,
+                    t.description,
+                    t.thumbnail_url,
+                    t.is_active,
+                    s.id AS store_id,
+                    s.name AS store_name
+                FROM theme t
+                JOIN store s ON t.store_id = s.id
+                WHERE t.store_id = :storeId
+                """;
+        SqlParameterSource params = new MapSqlParameterSource("storeId", storeId);
+        return jdbcTemplate.query(sql, params, rowMapper);
+    }
+
+    @Override
+    public List<Theme> findByStatusAndStoreId(boolean status, Long storeId) {
+        String sql = """
+                SELECT
+                    t.id AS theme_id,
+                    t.name AS theme_name,
+                    t.description,
+                    t.thumbnail_url,
+                    t.is_active,
+                    s.id AS store_id,
+                    s.name AS store_name
+                FROM theme t
+                JOIN store s ON t.store_id = s.id
+                WHERE t.is_active = :status
+                  AND t.store_id = :storeId
+                ORDER BY t.name ASC
+                """;
+
+        SqlParameterSource params = new MapSqlParameterSource()
+                .addValue("status", status)
+                .addValue("storeId", storeId);
+        return jdbcTemplate.query(sql, params, rowMapper);
+    }
 }

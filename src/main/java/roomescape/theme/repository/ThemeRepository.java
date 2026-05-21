@@ -20,4 +20,7 @@ public interface ThemeRepository {
 
     List<Theme> findPopularThemes(LocalDate startDate, LocalDate endDate, int limit, ReservationStatus status);
 
+    List<Theme> findAllByStoreId(Long storeId);
+
+    List<Theme> findByStatusAndStoreId(boolean b, Long storeId);
 }

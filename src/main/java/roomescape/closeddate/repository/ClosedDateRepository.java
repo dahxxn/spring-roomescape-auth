@@ -19,4 +19,5 @@ public interface ClosedDateRepository {
 
     boolean existsByDate(LocalDate date);
 
+    List<ClosedDate> findAllByStoreId(Long storeId);
 }

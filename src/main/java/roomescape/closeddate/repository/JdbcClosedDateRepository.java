@@ -113,4 +113,20 @@ public class JdbcClosedDateRepository implements ClosedDateRepository {
         Integer count = jdbcTemplate.queryForObject(sql, params, Integer.class);
         return count != null && count > 0;
     }
+
+    @Override
+    public List<ClosedDate> findAllByStoreId(Long storeId) {
+        String sql = """
+                SELECT
+                    cd.id AS closed_date_id,
+                    cd.date,
+                    s.id AS store_id,
+                    s.name AS store_name
+                FROM closed_date cd
+                JOIN store s ON cd.store_id = s.id
+                WHERE cd.store_id = :storeId
+                """;
+        SqlParameterSource params = new MapSqlParameterSource("storeId", storeId);
+        return jdbcTemplate.query(sql, params, rowMapper);
+    }
 }

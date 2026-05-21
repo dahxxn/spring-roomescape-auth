@@ -40,6 +40,14 @@ public class ThemeService {
     }
 
     @Transactional(readOnly = true)
+    public List<Theme> findActiveThemes(Long storeId) {
+        if (storeId == null) {
+            return themeRepository.findByStatus(true);
+        }
+        return themeRepository.findByStatusAndStoreId(true, storeId);
+    }
+
+    @Transactional(readOnly = true)
     public List<Theme> findPopularThemes(int top) {
         LocalDate today = LocalDate.now();
         LocalDate startDate = today.minusDays(7);
@@ -71,5 +79,12 @@ public class ThemeService {
             log.warn("Theme not found: id={}", id);
             return new NotFoundException("해당 테마가 존재하지 않습니다.");
         });
+    }
+
+    @Transactional(readOnly = true)
+    public List<Theme> findThemesByMemberId(Long memberId) {
+        Store store = storeRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new NotFoundException("관리 중인 매장이 없습니다."));
+        return themeRepository.findAllByStoreId(store.id());
     }
 }

@@ -142,4 +142,20 @@ public class JdbcReservationTimeRepository implements ReservationTimeRepository 
 
         return jdbcTemplate.query(sql, params, rowMapper);
     }
+
+    @Override
+    public List<ReservationTime> findAllByStoreId(Long storeId) {
+        String sql = """
+                SELECT
+                    rt.id AS time_id,
+                    rt.start_at,
+                    s.id AS store_id,
+                    s.name AS store_name
+                FROM reservation_time rt
+                JOIN store s ON rt.store_id = s.id
+                WHERE rt.store_id = :storeId
+                """;
+        SqlParameterSource params = new MapSqlParameterSource("storeId", storeId);
+        return jdbcTemplate.query(sql, params, rowMapper);
+    }
 }

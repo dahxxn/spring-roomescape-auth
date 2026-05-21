@@ -75,4 +75,11 @@ public class ReservationTimeService {
     public List<ReservationTime> findAvailableTimes(LocalDate date, Long themeId) {
         return reservationTimeRepository.findAvailableByDateAndThemeId(date, themeId, ReservationStatus.RESERVED);
     }
+
+    @Transactional(readOnly = true)
+    public List<ReservationTime> findAllByMemberId(Long memberId) {
+        Store store = storeRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new NotFoundException("관리 중인 매장이 없습니다."));
+        return reservationTimeRepository.findAllByStoreId(store.id());
+    }
 }

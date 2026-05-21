@@ -52,6 +52,13 @@ public class ClosedDateService {
         log.info("Closed date deleted: id={}, date={}", closedDate.id(), closedDate.date());
     }
 
+    @Transactional(readOnly = true)
+    public List<ClosedDate> findClosedDatesByMemberId(Long memberId) {
+        Store store = storeRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new NotFoundException("관리 중인 매장이 없습니다."));
+        return closedDateRepository.findAllByStoreId(store.id());
+    }
+
     @NonNull
     private ClosedDate findClosedDateOrThrow(Long id) {
         return closedDateRepository.findById(id)

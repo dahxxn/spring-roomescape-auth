@@ -21,4 +21,5 @@ public interface ReservationTimeRepository {
 
     List<ReservationTime> findAvailableByDateAndThemeId(LocalDate date, long themeId, ReservationStatus status);
 
+    List<ReservationTime> findAllByStoreId(Long storeId);
 }

@@ -1,5 +1,6 @@
 package roomescape.store.service;
 
+import java.util.List;
 import lombok.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +26,15 @@ public class StoreService {
         return storeRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new NotFoundException("관리 중인 매장이 존재하지 않습니다."));
     }
+
     @NonNull
     private Store findStoreOrThrow(Long id) {
         return storeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("해당 매장이 존재하지 않습니다."));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Store> findAll() {
+        return storeRepository.findAll();
     }
 }

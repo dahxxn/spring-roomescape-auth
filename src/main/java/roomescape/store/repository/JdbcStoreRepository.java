@@ -1,5 +1,6 @@
 package roomescape.store.repository;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Repository;
 import roomescape.store.domain.Store;
 
 @Repository
-public class JdbcStoreRepository implements StoreRepository{
+public class JdbcStoreRepository implements StoreRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     private final RowMapper<Store> rowMapper = (resultSet, rowNum) -> Store.load(
@@ -31,7 +32,7 @@ public class JdbcStoreRepository implements StoreRepository{
     }
 
     @Override
-    public  Optional<Store> findByMemberId(Long memberId) {
+    public Optional<Store> findByMemberId(Long memberId) {
         String sql = """
                 SELECT s.*
                 FROM store s
@@ -48,5 +49,11 @@ public class JdbcStoreRepository implements StoreRepository{
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public List<Store> findAll() {
+        String sql = "SELECT * FROM store";
+        return jdbcTemplate.query(sql, new MapSqlParameterSource(), rowMapper);
     }
 }
