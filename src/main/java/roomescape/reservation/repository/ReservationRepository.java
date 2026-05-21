@@ -18,7 +18,8 @@ public interface ReservationRepository {
 
     boolean existsByDateAndTimeAndThemeId(LocalDate date, LocalTime time, long themeId, ReservationStatus status);
 
-    boolean existsByDateAndTimeAndThemeId(LocalDate date, LocalTime time, long themeId, long excludeId, ReservationStatus status);
+    boolean existsByDateAndTimeAndThemeId(LocalDate date, LocalTime time, long themeId, long excludeId,
+                                          ReservationStatus status);
 
     boolean existsByNameAndDateAndTime(String name, LocalDate date, LocalTime time);
 
@@ -27,4 +28,6 @@ public interface ReservationRepository {
     Reservation updateStatus(Reservation reservation);
 
     Reservation updateDateAndTime(Reservation reservation);
+
+    List<Reservation> findAllByStoreId(Long storeId);
 }

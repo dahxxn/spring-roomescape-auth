@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import roomescape.common.exception.ConflictException;
 import roomescape.common.exception.DomainValidationException;
+import roomescape.common.exception.ForbiddenException;
 import roomescape.member.domain.Member;
 import roomescape.store.domain.Store;
 import roomescape.theme.domain.Theme;
@@ -132,6 +133,12 @@ public class Reservation {
     private void validateChangeable() {
         if (status == ReservationStatus.CANCELED) {
             throw new ConflictException("이미 취소된 예약은 수정할 수 없습니다.");
+        }
+    }
+
+    public void validateManagerAccess(Long managerStoreId) {
+        if (!this.store.id().equals(managerStoreId)) {
+            throw new ForbiddenException("자기 매장의 예약만 관리할 수 있습니다.");
         }
     }
 }

@@ -249,6 +249,16 @@ public class JdbcReservationRepository implements ReservationRepository {
         return reservation;
     }
 
+    @Override
+    public List<Reservation> findAllByStoreId(Long storeId) {
+        String sql = selectReservationSql() +
+                """
+                        WHERE r.store_id = :storeId
+                        """;
+        SqlParameterSource params = new MapSqlParameterSource("storeId", storeId);
+        return jdbcTemplate.query(sql, params, rowMapper);
+    }
+
     private String selectReservationSql() {
         return """
                 SELECT

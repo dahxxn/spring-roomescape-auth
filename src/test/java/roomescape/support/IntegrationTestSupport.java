@@ -36,6 +36,9 @@ public abstract class IntegrationTestSupport {
     protected Long adminId;
     protected Long userId;
 
+    private String managerSessionId;
+    protected Long managerId;
+
     @BeforeEach
     void setUpRestAssured() {
         RestAssured.port = port;
@@ -46,6 +49,8 @@ public abstract class IntegrationTestSupport {
 
         adminToken = issueToken("admin", "admin1234");
         userToken = issueToken("user01", "user1234");
+
+        managerSessionId = login("manager01", "manager1234");
     }
 
     private void setUpMembers() {
@@ -80,6 +85,21 @@ public abstract class IntegrationTestSupport {
         jdbcTemplate.update(
                 "INSERT INTO store_admin (member_id, store_id) VALUES (?, ?)",
                 adminId,
+                storeId
+        );
+
+        jdbcTemplate.update(
+                "INSERT INTO member (name, login_id, password, role) VALUES (?, ?, ?, ?)",
+                "매니저", "manager01", "manager1234", "MANAGER"
+        );
+        managerId = jdbcTemplate.queryForObject(
+                "SELECT id FROM member WHERE login_id = ?",
+                Long.class,
+                "manager01"
+        );
+        jdbcTemplate.update(
+                "INSERT INTO store_admin (member_id, store_id) VALUES (?, ?)",
+                managerId,
                 storeId
         );
     }
@@ -187,5 +207,9 @@ public abstract class IntegrationTestSupport {
         );
 
         return jdbcTemplate.queryForObject("SELECT MAX(id) FROM reservation", Long.class);
+    }
+
+    protected io.restassured.specification.RequestSpecification givenManager() {
+        return RestAssured.given().cookie("JSESSIONID", managerSessionId);
     }
 }
