@@ -21,7 +21,6 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import roomescape.reservation.controller.AdminReservationController;
-import roomescape.reservation.domain.Reservation;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
@@ -40,6 +39,10 @@ class MissionStepTest {
     private String adminSessionId;
     private String userSessionId;
 
+    private Long adminId;
+    private Long userId;
+    private Long storeId;
+
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
@@ -51,6 +54,31 @@ class MissionStepTest {
                 "INSERT INTO member (name, login_id, password, role) VALUES (?, ?, ?, ?)",
                 "테스트유저", "user01", "user1234", "USER"
         );
+
+        adminId = jdbcTemplate.queryForObject(
+                "SELECT id FROM member WHERE login_id = ?",
+                Long.class,
+                "admin"
+        );
+        userId = jdbcTemplate.queryForObject(
+                "SELECT id FROM member WHERE login_id = ?",
+                Long.class,
+                "user01"
+        );
+
+        jdbcTemplate.update("INSERT INTO store (name) VALUES (?)", "강남점");
+        storeId = jdbcTemplate.queryForObject(
+                "SELECT id FROM store WHERE name = ?",
+                Long.class,
+                "강남점"
+        );
+
+        jdbcTemplate.update(
+                "INSERT INTO store_admin (member_id, store_id) VALUES (?, ?)",
+                adminId,
+                storeId
+        );
+
         adminSessionId = login("admin", "admin1234");
         userSessionId = login("user01", "user1234");
     }
@@ -91,22 +119,36 @@ class MissionStepTest {
     @Test
     @DisplayName("DB 조회 API 전환")
     void DB_조회_API_전환() {
-        jdbcTemplate.update("INSERT INTO reservation_time (start_at) VALUES (?)", "15:40");
-        jdbcTemplate.update("INSERT INTO theme (name, description, thumbnail_url) VALUES (?, ?, ?)",
-                "테마1", "테마1 설명", "테마1 썸네일");
         jdbcTemplate.update(
-                "INSERT INTO reservation (name, date, start_at, theme_id, status) VALUES (?, ?, ?, ?, ?)",
-                "테스트유저", "2099-01-01", "15:40", 1, "RESERVED");
+                "INSERT INTO reservation_time (store_id, start_at) VALUES (?, ?)",
+                storeId, "15:40"
+        );
 
-        List<Reservation> reservations = RestAssured.given()
+        jdbcTemplate.update(
+                "INSERT INTO theme (store_id, name, description, thumbnail_url) VALUES (?, ?, ?, ?)",
+                storeId, "테마1", "테마1 설명", "테마1 썸네일"
+        );
+
+        jdbcTemplate.update(
+                "INSERT INTO reservation (member_id, store_id, date, start_at, theme_id, status) VALUES (?, ?, ?, ?, ?, ?)",
+                userId, storeId, "2099-01-01", "15:40", 1, "RESERVED"
+        );
+
+        List<Map<String, Object>> reservations = RestAssured.given()
                 .cookie("JSESSIONID", userSessionId)
                 .when().get("/reservations")
                 .then().log().all()
-                .statusCode(200).extract()
-                .jsonPath().getList(".", Reservation.class);
+                .statusCode(200)
+                .extract()
+                .jsonPath().getList(".");
 
         Integer count = jdbcTemplate.queryForObject(
-                "SELECT count(1) from reservation WHERE name = ?",
+                """
+                        SELECT count(1)
+                        FROM reservation r
+                        JOIN member m ON r.member_id = m.id
+                        WHERE m.name = ?
+                        """,
                 Integer.class, "테스트유저");
 
         assertThat(reservations.size()).isEqualTo(count);
@@ -115,7 +157,8 @@ class MissionStepTest {
     @Test
     @DisplayName("시간 관리 API")
     void 시간_관리_API() {
-        Map<String, String> params = new HashMap<>();
+        Map<String, Object> params = new HashMap<>();
+        params.put("storeId", storeId);
         params.put("startAt", "10:00");
 
         RestAssured.given()
@@ -143,45 +186,42 @@ class MissionStepTest {
     @Test
     @DisplayName("예약과 시간 연결")
     void 예약과_시간_연결() {
-        Map<String, String> time = new HashMap<>();
-        time.put("startAt", "10:00");
         RestAssured.given()
                 .cookie("JSESSIONID", adminSessionId)
                 .contentType(ContentType.JSON)
-                .body(time)
+                .body(Map.of("storeId", storeId, "startAt", "10:00"))
                 .when().post("/admin/times")
-                .then().log().all()
-                .statusCode(201);
+                .then().statusCode(201);
 
-        Map<String, Object> theme = new HashMap<>();
-        theme.put("name", "테마1");
-        theme.put("description", "테마1 설명");
-        theme.put("thumbnailUrl", "테마1 썸네일");
         RestAssured.given()
                 .cookie("JSESSIONID", adminSessionId)
                 .contentType(ContentType.JSON)
-                .body(theme)
+                .body(Map.of(
+                        "storeId", storeId,
+                        "name", "테마1",
+                        "description", "테마1 설명",
+                        "thumbnailUrl", "테마1 썸네일"
+                ))
                 .when().post("/admin/themes")
-                .then().log().all()
-                .statusCode(201);
-
-        Map<String, Object> reservation = new HashMap<>();
-        reservation.put("date", LocalDate.now().plusWeeks(1).toString());
-        reservation.put("timeId", 1);
-        reservation.put("themeId", 1);
+                .then().statusCode(201);
 
         RestAssured.given()
                 .cookie("JSESSIONID", userSessionId)
                 .contentType(ContentType.JSON)
-                .body(reservation)
+                .body(Map.of(
+                        "memberId", userId,
+                        "storeId", storeId,
+                        "date", LocalDate.now().plusWeeks(1).toString(),
+                        "timeId", 1,
+                        "themeId", 1
+                ))
                 .when().post("/reservations")
-                .then().log().all()
-                .statusCode(201);
+                .then().statusCode(201);
 
         RestAssured.given()
                 .cookie("JSESSIONID", userSessionId)
                 .when().get("/reservations")
-                .then().log().all()
+                .then()
                 .statusCode(200)
                 .body("size()", is(1));
     }

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.closeddate.service.ClosedDateService;
 
@@ -21,27 +22,27 @@ class AvailableDateServiceTest {
     @Autowired
     private ClosedDateService closedDateService;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @Test
     @DisplayName("오늘부터 30일치 날짜를 반환한다.")
     void findAvailableDates_returns_30_days() {
-        // given & when
         List<LocalDate> actual = availableDateService.findAvailableDates();
 
-        // then
         assertThat(actual).hasSize(30);
     }
 
     @Test
     @DisplayName("휴무일은 예약 가능 날짜에서 제외된다.")
     void findAvailableDates_excludes_closed_dates() {
-        // given
+        Long storeId = createStore("강남점");
         LocalDate tomorrow = LocalDate.now().plusDays(1);
-        closedDateService.register(tomorrow);
 
-        // when
+        closedDateService.register(storeId, tomorrow);
+
         List<LocalDate> actual = availableDateService.findAvailableDates();
 
-        // then
         assertThat(actual).hasSize(29);
         assertThat(actual).doesNotContain(tomorrow);
     }
@@ -49,15 +50,23 @@ class AvailableDateServiceTest {
     @Test
     @DisplayName("휴무일이 여러개이면 모두 제외된다.")
     void findAvailableDates_excludes_multiple_closed_dates() {
-        // given
-        closedDateService.register(LocalDate.now().plusDays(1));
-        closedDateService.register(LocalDate.now().plusDays(2));
-        closedDateService.register(LocalDate.now().plusDays(3));
+        Long storeId = createStore("강남점");
 
-        // when
+        closedDateService.register(storeId, LocalDate.now().plusDays(1));
+        closedDateService.register(storeId, LocalDate.now().plusDays(2));
+        closedDateService.register(storeId, LocalDate.now().plusDays(3));
+
         List<LocalDate> actual = availableDateService.findAvailableDates();
 
-        // then
         assertThat(actual).hasSize(27);
+    }
+
+    private Long createStore(String name) {
+        jdbcTemplate.update("INSERT INTO store (name) VALUES (?)", name);
+        return jdbcTemplate.queryForObject(
+                "SELECT id FROM store WHERE name = ?",
+                Long.class,
+                name
+        );
     }
 }

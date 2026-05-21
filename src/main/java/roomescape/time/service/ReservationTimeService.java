@@ -8,8 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.exception.ConflictException;
+import roomescape.common.exception.NotFoundException;
 import roomescape.reservation.domain.ReservationStatus;
 import roomescape.reservation.repository.ReservationRepository;
+import roomescape.store.domain.Store;
+import roomescape.store.repository.StoreRepository;
 import roomescape.time.domain.ReservationTime;
 import roomescape.time.repository.ReservationTimeRepository;
 
@@ -18,13 +21,16 @@ import roomescape.time.repository.ReservationTimeRepository;
 public class ReservationTimeService {
     private final ReservationTimeRepository reservationTimeRepository;
     private final ReservationRepository reservationRepository;
+    private final StoreRepository storeRepository;
 
     public ReservationTimeService(
             ReservationTimeRepository reservationTimeRepository,
-            ReservationRepository reservationRepository
+            ReservationRepository reservationRepository,
+            StoreRepository storeRepository
     ) {
         this.reservationTimeRepository = reservationTimeRepository;
         this.reservationRepository = reservationRepository;
+        this.storeRepository = storeRepository;
     }
 
     @Transactional(readOnly = true)
@@ -33,9 +39,11 @@ public class ReservationTimeService {
     }
 
     @Transactional
-    public ReservationTime create(LocalTime startAt) {
+    public ReservationTime create(Long storeId, LocalTime startAt) {
         validateDuplicateTimeExist(startAt);
-        ReservationTime reservationTime = reservationTimeRepository.save(ReservationTime.create(startAt));
+        Store store = storeRepository.findById(storeId).orElseThrow(
+                () -> new NotFoundException("존재하지 않는 매장입니다."));
+        ReservationTime reservationTime = reservationTimeRepository.save(ReservationTime.create(store, startAt));
         log.info("Reservation time created: id={}, startAt={}", reservationTime.id(), startAt);
         return reservationTime;
     }
@@ -55,7 +63,7 @@ public class ReservationTimeService {
         }
         ReservationTime time = reservationTime.get();
 
-        if(reservationRepository.existsByTimeId(time.id(), ReservationStatus.RESERVED)) {
+        if (reservationRepository.existsByTimeId(time.id(), ReservationStatus.RESERVED)) {
             log.warn("Cannot delete reservation time with existing reservations: id={}", id);
             throw new ConflictException("예약이 있는 예약 시간은 삭제할 수 없습니다.");
         }

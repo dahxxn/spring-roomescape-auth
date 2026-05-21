@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,26 +28,47 @@ class AvailableTimeIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     private String userSessionId;
+    private Long storeId;
+    private Long userId;
 
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
         jdbcTemplate.execute("TRUNCATE TABLE reservation RESTART IDENTITY");
         jdbcTemplate.execute("TRUNCATE TABLE reservation_time RESTART IDENTITY");
         jdbcTemplate.execute("TRUNCATE TABLE closed_date RESTART IDENTITY");
         jdbcTemplate.execute("TRUNCATE TABLE theme RESTART IDENTITY");
+        jdbcTemplate.execute("TRUNCATE TABLE store_admin RESTART IDENTITY");
+        jdbcTemplate.execute("TRUNCATE TABLE store RESTART IDENTITY");
         jdbcTemplate.execute("TRUNCATE TABLE member RESTART IDENTITY");
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
 
-        jdbcTemplate.update("INSERT INTO reservation_time (start_at) VALUES (?)", "10:00");
-        jdbcTemplate.update("INSERT INTO reservation_time (start_at) VALUES (?)", "12:00");
-        jdbcTemplate.update("INSERT INTO reservation_time (start_at) VALUES (?)", "14:00");
-        jdbcTemplate.update("INSERT INTO theme (name, description, thumbnail_url, is_active) VALUES (?, ?, ?, ?)",
-                "공포", "공포 테마", "https://horror.jpg", true);
+        jdbcTemplate.update("INSERT INTO store (name) VALUES (?)", "강남점");
+        storeId = jdbcTemplate.queryForObject(
+                "SELECT id FROM store WHERE name = ?",
+                Long.class,
+                "강남점"
+        );
+
         jdbcTemplate.update(
                 "INSERT INTO member (name, login_id, password, role) VALUES (?, ?, ?, ?)",
                 "테스트유저", "user01", "user1234", "USER"
+        );
+        userId = jdbcTemplate.queryForObject(
+                "SELECT id FROM member WHERE login_id = ?",
+                Long.class,
+                "user01"
+        );
+
+        jdbcTemplate.update("INSERT INTO reservation_time (store_id, start_at) VALUES (?, ?)", storeId, "10:00");
+        jdbcTemplate.update("INSERT INTO reservation_time (store_id, start_at) VALUES (?, ?)", storeId, "12:00");
+        jdbcTemplate.update("INSERT INTO reservation_time (store_id, start_at) VALUES (?, ?)", storeId, "14:00");
+
+        jdbcTemplate.update(
+                "INSERT INTO theme (store_id, name, description, thumbnail_url, is_active) VALUES (?, ?, ?, ?, ?)",
+                storeId, "공포", "공포 테마", "https://horror.jpg", true
         );
 
         userSessionId = RestAssured.given()
@@ -78,6 +98,8 @@ class AvailableTimeIntegrationTest {
                 .cookie("JSESSIONID", userSessionId)
                 .contentType(ContentType.JSON)
                 .body(Map.of(
+                        "memberId", userId,
+                        "storeId", storeId,
                         "date", date.toString(),
                         "timeId", 1,
                         "themeId", 1

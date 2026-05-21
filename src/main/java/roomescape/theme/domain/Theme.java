@@ -1,35 +1,48 @@
 package roomescape.theme.domain;
 
 import roomescape.common.exception.DomainValidationException;
+import roomescape.store.domain.Store;
 
 public class Theme {
     private final Long id;
+    private final Store store;
     private final String name;
     private final String description;
     private final String thumbnailUrl;
     private final boolean isActive;
 
-    private Theme(Long id, String name, String description, String thumbnailUrl, boolean isActive) {
-        validate(name, description, thumbnailUrl);
+    private Theme(Long id, Store store, String name, String description, String thumbnailUrl, boolean isActive) {
+        validate(store, name, description, thumbnailUrl);
         this.id = id;
+        this.store = store;
         this.name = name;
         this.description = description;
         this.thumbnailUrl = thumbnailUrl;
         this.isActive = isActive;
     }
 
-    public static Theme create(String name, String description, String thumbnailUrl) {
-        return new Theme(null, name, description, thumbnailUrl, false);
+    public static Theme create(Store store, String name, String description, String thumbnailUrl) {
+        validate(store, name, description, thumbnailUrl);
+        return new Theme(null, store, name, description, thumbnailUrl, false);
     }
 
-    public static Theme load(Long id, String name, String description, String thumbnailUrl, boolean isActive) {
-        return new Theme(id, name, description, thumbnailUrl, isActive);
+    public static Theme load(Long id, Store store, String name, String description, String thumbnailUrl,
+                             boolean isActive) {
+        validate(store, name, description, thumbnailUrl);
+        return new Theme(id, store, name, description, thumbnailUrl, isActive);
     }
 
-    private static void validate(String name, String description, String thumbnailUrl) {
+    private static void validate(Store store, String name, String description, String thumbnailUrl) {
+        validateStore(store);
         validateName(name);
         validateDescription(description);
         validateThumbnailUrl(thumbnailUrl);
+    }
+
+    private static void validateStore(Store store) {
+        if (store == null) {
+            throw new DomainValidationException("매장은 필수입니다.");
+        }
     }
 
     private static void validateName(String name) {
@@ -54,6 +67,10 @@ public class Theme {
         return id;
     }
 
+    public Store store() {
+        return store;
+    }
+
     public String name() {
         return name;
     }
@@ -71,6 +88,6 @@ public class Theme {
     }
 
     public Theme changeStatus(boolean isActive) {
-        return new Theme(id, name, description, thumbnailUrl, isActive);
+        return new Theme(id, store, name, description, thumbnailUrl, isActive);
     }
 }

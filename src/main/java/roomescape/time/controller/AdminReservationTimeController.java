@@ -48,7 +48,7 @@ public class AdminReservationTimeController {
     public ResponseEntity<ReservationTimeDetailDto> createReservationTime(
             @Valid @RequestBody ReservationTimeSaveDto reservationTimeSaveDto) {
         ReservationTimeDetailDto responseData = ReservationTimeDetailDto.from(
-                reservationTimeService.create(reservationTimeSaveDto.startAt()));
+                reservationTimeService.create(reservationTimeSaveDto.storeId(), reservationTimeSaveDto.startAt()));
         return ResponseEntity.status(CREATED).body(responseData);
     }
 

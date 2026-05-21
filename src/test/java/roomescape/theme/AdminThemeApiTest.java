@@ -17,6 +17,7 @@ class AdminThemeApiTest extends IntegrationTestSupport {
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "name", "테마1",
+                        "storeId", storeId,
                         "description", "테마1 설명",
                         "thumbnailUrl", "테마1 썸네일"
                 ))

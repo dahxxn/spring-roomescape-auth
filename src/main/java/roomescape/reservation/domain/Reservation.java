@@ -5,37 +5,45 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import roomescape.common.exception.ConflictException;
 import roomescape.common.exception.DomainValidationException;
+import roomescape.member.domain.Member;
+import roomescape.store.domain.Store;
 import roomescape.theme.domain.Theme;
 
 public class Reservation {
     private final Long id;
-    private final String name;
+    private final Member member;
+    private final Store store;
     private final LocalDate date;
     private final LocalTime time;
     private final Theme theme;
     private final ReservationStatus status;
 
-    private Reservation(Long id, String name, LocalDate date, LocalTime time, Theme theme, ReservationStatus status) {
-        validate(name, date, time, theme);
+    private Reservation(Long id, Member member, Store store, LocalDate date, LocalTime time, Theme theme,
+                        ReservationStatus status) {
+        validate(member, store, date, time, theme);
+        validateThemeBelongsToStore(store, theme);
         this.id = id;
-        this.name = name;
+        this.member = member;
+        this.store = store;
         this.date = date;
         this.time = time;
         this.theme = theme;
         this.status = status;
     }
 
-    public static Reservation create(String name, LocalDate date, LocalTime time, Theme theme) {
+    public static Reservation create(Member member, Store store, LocalDate date, LocalTime time, Theme theme) {
         validatePast(date, time);
-        return new Reservation(null, name, date, time, theme, ReservationStatus.RESERVED);
+        return new Reservation(null, member, store, date, time, theme, ReservationStatus.RESERVED);
     }
 
-    public static Reservation load(Long id, String name, LocalDate date, LocalTime time, Theme theme, ReservationStatus status) {
-        return new Reservation(id, name, date, time, theme, status);
+    public static Reservation load(Long id, Member member, Store store, LocalDate date, LocalTime time, Theme theme,
+                                   ReservationStatus status) {
+        return new Reservation(id, member, store, date, time, theme, status);
     }
 
-    private static void validate(String name, LocalDate date, LocalTime time, Theme theme) {
-        validateName(name);
+    private static void validate(Member member, Store store, LocalDate date, LocalTime time, Theme theme) {
+        validateMember(member);
+        validateStore(store);
         validateDate(date);
         validateTime(time);
         validateTheme(theme);
@@ -47,9 +55,15 @@ public class Reservation {
         }
     }
 
-    private static void validateName(String name) {
-        if (name == null || name.isBlank()) {
-            throw new DomainValidationException("예약자 이름은 필수입니다.");
+    private static void validateMember(Member member) {
+        if (member == null) {
+            throw new DomainValidationException("예약자는 필수입니다.");
+        }
+    }
+
+    private static void validateStore(Store store) {
+        if (store == null) {
+            throw new DomainValidationException("스토어는 필수입니다.");
         }
     }
 
@@ -71,12 +85,22 @@ public class Reservation {
         }
     }
 
+    private static void validateThemeBelongsToStore(Store store, Theme theme) {
+        if (!theme.store().id().equals(store.id())) {
+            throw new DomainValidationException("해당 매장의 테마가 아닙니다.");
+        }
+    }
+
     public Long id() {
         return id;
     }
 
-    public String name() {
-        return name;
+    public Member member() {
+        return member;
+    }
+
+    public Store store() {
+        return store;
     }
 
     public LocalDate date() {
@@ -96,17 +120,17 @@ public class Reservation {
     }
 
     public Reservation cancel() {
-        return new Reservation(id, name, date, time, theme, ReservationStatus.CANCELED);
+        return new Reservation(id, member, store, date, time, theme, ReservationStatus.CANCELED);
     }
 
     public Reservation rescheduled(LocalDate date, LocalTime time) {
         validateChangeable();
         validatePast(date, time);
-        return new Reservation(id, name, date, time, theme, status);
+        return new Reservation(id, member, store, date, time, theme, status);
     }
 
     private void validateChangeable() {
-        if(status == ReservationStatus.CANCELED){
+        if (status == ReservationStatus.CANCELED) {
             throw new ConflictException("이미 취소된 예약은 수정할 수 없습니다.");
         }
     }

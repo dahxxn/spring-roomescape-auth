@@ -10,8 +10,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import roomescape.common.exception.NotFoundException;
+import roomescape.store.domain.Store;
 import roomescape.theme.domain.Theme;
 
 @SpringBootTest
@@ -23,34 +25,35 @@ class ThemeServiceTest {
     @Autowired
     private ThemeService themeService;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @Test
     @DisplayName("등록된 테마가 여러개이면 조회 시 등록된 갯수만큼 반환한다.")
     void findThemes() {
-        // given
-        List<Theme> themes = List.of(
-                Theme.create("테마1", "테마1 설명", "테마1 썸네일"),
-                Theme.create("테마2", "테마2 설명", "테마2 썸네일"),
-                Theme.create("테마3", "테마3 설명", "테마3 썸네일")
-        );
-        saveAll(themes);
+        Long storeId = createStore("강남점");
+        Store store = Store.load(storeId, "강남점");
 
-        // when
+        List<Theme> themes = List.of(
+                Theme.create(store, "테마1", "테마1 설명", "테마1 썸네일"),
+                Theme.create(store, "테마2", "테마2 설명", "테마2 썸네일"),
+                Theme.create(store, "테마3", "테마3 설명", "테마3 썸네일")
+        );
+        saveAll(storeId, themes);
+
         List<Theme> actual = themeService.findThemes();
 
-        // then
         assertThat(actual).hasSize(themes.size());
     }
 
     @Test
     @DisplayName("등록된 테마와 조회되는 테마의 모든 필드가 일치한다.")
     void findTheme() {
-        // given
-        Theme savedTheme = themeService.register("테마1", "테마1 설명", "테마1 썸네일");
+        Long storeId = createStore("강남점");
+        Theme savedTheme = themeService.register(storeId, "테마1", "테마1 설명", "테마1 썸네일");
 
-        // when
         Theme actual = themeService.findTheme(savedTheme.id());
 
-        // then
         assertThat(actual)
                 .usingRecursiveComparison()
                 .isEqualTo(savedTheme);
@@ -59,10 +62,8 @@ class ThemeServiceTest {
     @Test
     @DisplayName("등록되지 않은 테마 조회 시 예외가 발생한다.")
     void findTheme_unregistered() {
-        // given
         Long unregisteredId = Long.MIN_VALUE;
 
-        // when & then
         assertThatThrownBy(() -> themeService.findTheme(unregisteredId))
                 .isInstanceOf(NotFoundException.class);
     }
@@ -70,18 +71,14 @@ class ThemeServiceTest {
     @Test
     @DisplayName("활성화된 테마 목록을 가나다순으로 조회한다.")
     void findActiveThemes() {
-        // given
-        String name1 = "다테마";
-        String name2 = "나테마";
-        String name3 = "가테마";
+        Long storeId = createStore("강남점");
+        Store store = Store.load(storeId, "강남점");
 
-        List<Theme> themes = saveAll(generateActiveThemesByName(List.of(name1, name2, name3)));
+        List<Theme> themes = saveAll(storeId, generateActiveThemesByName(store, List.of("다테마", "나테마", "가테마")));
         themes.sort(Comparator.comparing(Theme::name));
 
-        // when
         List<Theme> actual = themeService.findActiveThemes();
 
-        // then
         assertThat(actual)
                 .usingRecursiveComparison()
                 .isEqualTo(themes);
@@ -90,31 +87,20 @@ class ThemeServiceTest {
     @Test
     @DisplayName("테마를 1개 등록하면 테마 데이터 수가 1 증가한다.")
     void register() {
-        // given
-        String name = "테마1";
-        String description = "테마1 설명";
-        String thumbnail = "테마1 썸네일";
+        Long storeId = createStore("강남점");
 
-        // when
-        themeService.register(name, description, thumbnail);
+        themeService.register(storeId, "테마1", "테마1 설명", "테마1 썸네일");
 
-        // then
-        assertThat(themeService.findThemes())
-                .hasSize(1);
+        assertThat(themeService.findThemes()).hasSize(1);
     }
 
     @Test
     @DisplayName("등록한 테마와 다시 조회한 테마의 모든 필드가 일치한다.")
     void register_theme_fields_match() {
-        // given
-        String name = "테마1";
-        String description = "테마1 설명";
-        String thumbnail = "테마1 썸네일";
+        Long storeId = createStore("강남점");
 
-        // when
-        Theme registeredTheme = themeService.register(name, description, thumbnail);
+        Theme registeredTheme = themeService.register(storeId, "테마1", "테마1 설명", "테마1 썸네일");
 
-        // then
         assertThat(registeredTheme)
                 .usingRecursiveComparison()
                 .isEqualTo(themeService.findTheme(registeredTheme.id()));
@@ -123,49 +109,55 @@ class ThemeServiceTest {
     @Test
     @DisplayName("테마를 활성화한다.")
     void changeStatus_active() {
-        // given
-        Theme savedTheme = themeService.register("테마1", "테마1 설명", "테마1 썸네일");
+        Long storeId = createStore("강남점");
+        Theme savedTheme = themeService.register(storeId, "테마1", "테마1 설명", "테마1 썸네일");
 
-        // when
         themeService.updateStatus(savedTheme.id(), true);
 
-        // then
-        assertThat(themeService.findTheme(savedTheme.id()).isActive())
-                .isTrue();
+        assertThat(themeService.findTheme(savedTheme.id()).isActive()).isTrue();
     }
 
     @Test
     @DisplayName("테마를 비활성화한다.")
     void changeStatus_deactivate() {
-        // given
-        Theme theme = themeService.register("테마1", "테마1 설명", "테마1 썸네일");
+        Long storeId = createStore("강남점");
+        Theme theme = themeService.register(storeId, "테마1", "테마1 설명", "테마1 썸네일");
         themeService.updateStatus(theme.id(), true);
 
-        // when
         themeService.updateStatus(theme.id(), false);
 
-        // then
-        assertThat(themeService.findTheme(theme.id()).isActive())
-                .isFalse();
+        assertThat(themeService.findTheme(theme.id()).isActive()).isFalse();
     }
 
-    private List<Theme> saveAll(List<Theme> themes) {
+    private List<Theme> saveAll(Long storeId, List<Theme> themes) {
         List<Theme> savedThemes = new ArrayList<>();
+
         for (Theme theme : themes) {
-            Theme savedTheme = themeService.register(theme.name(), theme.description(), theme.thumbnailUrl());
-            themeService.updateStatus(savedTheme.id(), theme.isActive()); // 활성화 상태 반영
+            Theme savedTheme = themeService.register(storeId, theme.name(), theme.description(), theme.thumbnailUrl());
+            themeService.updateStatus(savedTheme.id(), theme.isActive());
             savedThemes.add(themeService.findTheme(savedTheme.id()));
         }
+
         return savedThemes;
     }
 
-        private List<Theme> generateActiveThemesByName(List<String> names) {
+    private List<Theme> generateActiveThemesByName(Store store, List<String> names) {
         List<Theme> themes = new ArrayList<>();
+
         for (String name : names) {
-            Theme theme = Theme.create(name, DEFAULT_DESCRIPTION, DEFAULT_THUMBNAIL_URL);
-            Theme changedTheme = theme.changeStatus(true);
-            themes.add(changedTheme);
+            Theme theme = Theme.create(store, name, DEFAULT_DESCRIPTION, DEFAULT_THUMBNAIL_URL);
+            themes.add(theme.changeStatus(true));
         }
+
         return themes;
+    }
+
+    private Long createStore(String name) {
+        jdbcTemplate.update("INSERT INTO store (name) VALUES (?)", name);
+        return jdbcTemplate.queryForObject(
+                "SELECT id FROM store WHERE name = ?",
+                Long.class,
+                name
+        );
     }
 }

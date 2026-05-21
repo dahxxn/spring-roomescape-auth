@@ -10,14 +10,18 @@ import roomescape.closeddate.domain.ClosedDate;
 import roomescape.closeddate.repository.ClosedDateRepository;
 import roomescape.common.exception.ConflictException;
 import roomescape.common.exception.NotFoundException;
+import roomescape.store.domain.Store;
+import roomescape.store.repository.StoreRepository;
 
 @Slf4j
 @Service
 public class ClosedDateService {
     private final ClosedDateRepository closedDateRepository;
+    private final StoreRepository storeRepository;
 
-    public ClosedDateService(ClosedDateRepository closedDateRepository) {
+    public ClosedDateService(ClosedDateRepository closedDateRepository, StoreRepository storeRepository) {
         this.closedDateRepository = closedDateRepository;
+        this.storeRepository = storeRepository;
     }
 
     @Transactional(readOnly = true)
@@ -26,13 +30,19 @@ public class ClosedDateService {
     }
 
     @Transactional
-    public ClosedDate register(LocalDate date) {
+    public ClosedDate register(Long storeId, LocalDate date) {
         if (closedDateRepository.existsByDate(date)) {
             log.warn("Closed date already exists: date={}", date);
             throw new ConflictException("이미 등록된 휴무일입니다.");
         }
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> {
+                    log.warn("Store not found: id={}", storeId);
+                    return new NotFoundException("존재하지 않는 매장입니다.");
+                });
+
         log.info("Closed date registered: date={}", date);
-        return closedDateRepository.save(ClosedDate.create(date));
+        return closedDateRepository.save(ClosedDate.create(store, date));
     }
 
     @Transactional

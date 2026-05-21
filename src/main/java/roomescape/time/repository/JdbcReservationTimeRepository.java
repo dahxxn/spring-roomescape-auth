@@ -12,16 +12,26 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 import roomescape.reservation.domain.ReservationStatus;
+import roomescape.store.domain.Store;
 import roomescape.time.domain.ReservationTime;
 
 @Repository
 public class JdbcReservationTimeRepository implements ReservationTimeRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final SimpleJdbcInsert simpleJdbcInsert;
-    RowMapper<ReservationTime> RESERVATION_TIME_ROW_MAPPER = (resultSet, rowNum) -> ReservationTime.load(
-            resultSet.getLong("id"),
-            resultSet.getTime("start_at").toLocalTime()
-    );
+
+    private final RowMapper<ReservationTime> rowMapper = (resultSet, rowNum) -> {
+        Store store = Store.load(
+                resultSet.getLong("store_id"),
+                resultSet.getString("store_name")
+        );
+
+        return ReservationTime.load(
+                resultSet.getLong("time_id"),
+                store,
+                resultSet.getTime("start_at").toLocalTime()
+        );
+    };
 
     public JdbcReservationTimeRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -32,23 +42,36 @@ public class JdbcReservationTimeRepository implements ReservationTimeRepository 
 
     @Override
     public List<ReservationTime> findAll() {
-        String sql = "SELECT * FROM reservation_time";
+        String sql = """
+                SELECT
+                    rt.id AS time_id,
+                    rt.start_at,
+                    s.id AS store_id,
+                    s.name AS store_name
+                FROM reservation_time rt
+                JOIN store s ON rt.store_id = s.id
+                """;
 
-        return jdbcTemplate.query(sql, new MapSqlParameterSource(), RESERVATION_TIME_ROW_MAPPER);
+        return jdbcTemplate.query(sql, new MapSqlParameterSource(), rowMapper);
     }
 
     @Override
     public Optional<ReservationTime> findById(Long id) {
         String sql = """
-                SELECT * FROM reservation_time 
-                WHERE id=:id
+                SELECT
+                    rt.id AS time_id,
+                    rt.start_at,
+                    s.id AS store_id,
+                    s.name AS store_name
+                FROM reservation_time rt
+                JOIN store s ON rt.store_id = s.id
+                WHERE rt.id = :id
                 """;
 
         SqlParameterSource params = new MapSqlParameterSource("id", id);
 
         try {
-            return Optional.ofNullable(
-                    jdbcTemplate.queryForObject(sql, params, RESERVATION_TIME_ROW_MAPPER));
+            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, params, rowMapper));
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
@@ -56,17 +79,26 @@ public class JdbcReservationTimeRepository implements ReservationTimeRepository 
 
     @Override
     public ReservationTime save(ReservationTime reservationTime) {
-        SqlParameterSource params = new MapSqlParameterSource("start_at", reservationTime.startAt());
-        Long savedId= simpleJdbcInsert.executeAndReturnKey(params).longValue();
-        return ReservationTime.load(savedId, reservationTime.startAt());
+        SqlParameterSource params = new MapSqlParameterSource()
+                .addValue("store_id", reservationTime.store().id())
+                .addValue("start_at", reservationTime.startAt());
+
+        Long savedId = simpleJdbcInsert.executeAndReturnKey(params).longValue();
+
+        return ReservationTime.load(
+                savedId,
+                reservationTime.store(),
+                reservationTime.startAt()
+        );
     }
 
     @Override
     public void delete(Long id) {
         String sql = """
-                DELETE FROM reservation_time 
-                WHERE id=:id
+                DELETE FROM reservation_time
+                WHERE id = :id
                 """;
+
         MapSqlParameterSource params = new MapSqlParameterSource("id", id);
         jdbcTemplate.update(sql, params);
     }
@@ -74,9 +106,11 @@ public class JdbcReservationTimeRepository implements ReservationTimeRepository 
     @Override
     public boolean existsByStartAt(LocalTime startAt) {
         String sql = """
-                SELECT COUNT(*) FROM reservation_time 
+                SELECT COUNT(*)
+                FROM reservation_time
                 WHERE start_at = :start_at
                 """;
+
         MapSqlParameterSource params = new MapSqlParameterSource("start_at", startAt);
         Integer count = jdbcTemplate.queryForObject(sql, params, Integer.class);
         return count != null && count > 0;
@@ -85,12 +119,19 @@ public class JdbcReservationTimeRepository implements ReservationTimeRepository 
     @Override
     public List<ReservationTime> findAvailableByDateAndThemeId(LocalDate date, long themeId, ReservationStatus status) {
         String sql = """
-                SELECT * FROM reservation_time
-                WHERE start_at NOT IN (
-                    SELECT start_at FROM reservation
-                    WHERE date = :date
-                    AND theme_id = :theme_id
-                    AND status = :status
+                SELECT
+                    rt.id AS time_id,
+                    rt.start_at,
+                    s.id AS store_id,
+                    s.name AS store_name
+                FROM reservation_time rt
+                JOIN store s ON rt.store_id = s.id
+                WHERE rt.start_at NOT IN (
+                    SELECT r.start_at
+                    FROM reservation r
+                    WHERE r.date = :date
+                      AND r.theme_id = :theme_id
+                      AND r.status = :status
                 )
                 """;
 
@@ -99,6 +140,6 @@ public class JdbcReservationTimeRepository implements ReservationTimeRepository 
                 .addValue("theme_id", themeId)
                 .addValue("status", status.name());
 
-        return jdbcTemplate.query(sql, params, RESERVATION_TIME_ROW_MAPPER);
+        return jdbcTemplate.query(sql, params, rowMapper);
     }
 }

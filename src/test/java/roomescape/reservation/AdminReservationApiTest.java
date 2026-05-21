@@ -41,7 +41,8 @@ class AdminReservationApiTest extends IntegrationTestSupport {
         givenAdmin().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
-                        "name", "브라운",
+                        "memberId", userId,
+                        "storeId", storeId,
                         "date", date.toString(),
                         "timeId", timeId,
                         "themeId", themeId
@@ -49,7 +50,7 @@ class AdminReservationApiTest extends IntegrationTestSupport {
                 .when().post("/admin/reservations")
                 .then().log().all()
                 .statusCode(201)
-                .body("name", is("브라운"))
+                .body("name", is("테스트유저"))
                 .body("date", is(date.toString()))
                 .body("time", is("10:00:00"))
                 .body("theme.name", is("테마1"))

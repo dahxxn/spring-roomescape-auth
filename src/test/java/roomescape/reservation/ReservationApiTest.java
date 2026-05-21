@@ -23,6 +23,7 @@ class ReservationApiTest extends IntegrationTestSupport {
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "date", date.toString(),
+                        "storeId", storeId,
                         "timeId", timeId,
                         "themeId", themeId
                 ))

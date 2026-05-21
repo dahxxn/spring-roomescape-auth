@@ -55,7 +55,7 @@ public class AdminThemeController {
     @AdminRequired
     @Operation(summary = "Create a theme", description = "테마를 생성하는 api")
     public ResponseEntity<ThemeDetailDto> createTheme(@Valid @RequestBody ThemeSaveDto dto) {
-        Theme theme = themeService.register(dto.name(), dto.description(), dto.thumbnailUrl());
+        Theme theme = themeService.register(dto.storeId(), dto.name(), dto.description(), dto.thumbnailUrl());
         ThemeDetailDto responseData = ThemeDetailDto.from(theme);
         return ResponseEntity.status(CREATED).body(responseData);
     }
@@ -64,7 +64,8 @@ public class AdminThemeController {
     @LoginRequired
     @AdminRequired
     @Operation(summary = "Update theme status", description = "테마 활성화 상태를 업데이트하는 api")
-    public ResponseEntity<ThemeDetailDto> updateThemeStatus(@PathVariable Long id, @Valid @RequestBody ThemeActiveUpdateDto dto) {
+    public ResponseEntity<ThemeDetailDto> updateThemeStatus(@PathVariable Long id,
+                                                            @Valid @RequestBody ThemeActiveUpdateDto dto) {
         Theme theme = themeService.updateStatus(id, dto.isActive());
         ThemeDetailDto responseData = ThemeDetailDto.from(theme);
         return ResponseEntity.ok(responseData);

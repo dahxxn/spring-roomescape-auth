@@ -18,7 +18,7 @@ public record ReservationDetailDto(
     public static ReservationDetailDto from(Reservation reservation) {
         return new ReservationDetailDto(
                 reservation.id(),
-                reservation.name(),
+                reservation.member().name(),
                 reservation.date(),
                 reservation.time(),
                 ThemeDetailDto.from(reservation.theme()),

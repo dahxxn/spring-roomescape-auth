@@ -21,6 +21,8 @@ class ReservationIntegrationTest extends IntegrationTestSupport {
         givenUser().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
+                        "memberId", userId,
+                        "storeId", storeId,
                         "date", date.toString(),
                         "timeId", timeId,
                         "themeId", themeId
@@ -43,7 +45,8 @@ class ReservationIntegrationTest extends IntegrationTestSupport {
         givenAdmin().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
-                        "name", "포비",
+                        "memberId", adminId,
+                        "storeId", storeId,
                         "date", date.toString(),
                         "timeId", timeId,
                         "themeId", themeId
@@ -67,7 +70,8 @@ class ReservationIntegrationTest extends IntegrationTestSupport {
         givenAdmin().log().all()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
-                        "name", "포비",
+                        "memberId", adminId,
+                        "storeId", storeId,
                         "date", date.toString(),
                         "timeId", secondTimeId,
                         "themeId", themeId

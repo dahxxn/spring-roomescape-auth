@@ -45,7 +45,7 @@ public class AdminReservationController {
     @Operation(summary = "Create a reservation", description = "예약을 생성하는 api")
     public ResponseEntity<ReservationDetailDto> createReservation(@Valid @RequestBody ReservationSaveDto dto) {
         ReservationDetailDto responseData = ReservationDetailDto.from(
-                reservationService.create(dto.name(), dto.date(), dto.timeId(), dto.themeId()));
+                reservationService.create(dto.memberId(), dto.storeId(), dto.date(), dto.timeId(), dto.themeId()));
         return ResponseEntity.status(CREATED).body(responseData);
     }
 

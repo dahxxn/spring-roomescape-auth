@@ -38,7 +38,7 @@ public class ReservationController {
             @Valid @RequestBody ReservationCreateDto dto
     ) {
         ReservationDetailDto responseData = ReservationDetailDto.from(
-                reservationService.create(loginMember.name(), dto.date(), dto.timeId(), dto.themeId()));
+                reservationService.create(loginMember.id(), dto.storeId(), dto.date(), dto.timeId(), dto.themeId()));
         return ResponseEntity.status(CREATED).body(responseData);
     }
 
@@ -61,7 +61,8 @@ public class ReservationController {
             @PathVariable Long id,
             @LoginMember LoginMemberDto loginMember
     ) {
-        ReservationDetailDto responseData = ReservationDetailDto.from(reservationService.cancel(id, loginMember.name()));
+        ReservationDetailDto responseData = ReservationDetailDto.from(
+                reservationService.cancel(id, loginMember.name()));
         return ResponseEntity.ok(responseData);
     }
 

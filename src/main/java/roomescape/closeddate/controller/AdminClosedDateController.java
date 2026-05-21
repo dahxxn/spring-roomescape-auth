@@ -46,7 +46,8 @@ public class AdminClosedDateController {
     public ResponseEntity<ClosedDateDetailDto> createClosedDate(
             @Valid @RequestBody ClosedDateSaveDto dto
     ) {
-        ClosedDateDetailDto responseData = ClosedDateDetailDto.from(closedDateService.register(dto.date()));
+        ClosedDateDetailDto responseData = ClosedDateDetailDto.from(
+                closedDateService.register(dto.storeId(), dto.date()));
         return ResponseEntity.status(CREATED).body(responseData);
     }
 

@@ -11,16 +11,25 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 import roomescape.closeddate.domain.ClosedDate;
+import roomescape.store.domain.Store;
 
 @Repository
 public class JdbcClosedDateRepository implements ClosedDateRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final SimpleJdbcInsert simpleJdbcInsert;
-    private final RowMapper<ClosedDate> closedDateRowMapper = (resultSet, rowNum) ->
-            ClosedDate.load(
-                    resultSet.getLong("id"),
-                    resultSet.getDate("date").toLocalDate()
-            );
+
+    private final RowMapper<ClosedDate> rowMapper = (resultSet, rowNum) -> {
+        Store store = Store.load(
+                resultSet.getLong("store_id"),
+                resultSet.getString("store_name")
+        );
+
+        return ClosedDate.load(
+                resultSet.getLong("closed_date_id"),
+                store,
+                resultSet.getDate("date").toLocalDate()
+        );
+    };
 
     public JdbcClosedDateRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -31,19 +40,36 @@ public class JdbcClosedDateRepository implements ClosedDateRepository {
 
     @Override
     public List<ClosedDate> findAll() {
-        String sql = "SELECT * FROM closed_date";
-        return jdbcTemplate.query(sql, new MapSqlParameterSource(), closedDateRowMapper);
+        String sql = """
+                SELECT
+                    cd.id AS closed_date_id,
+                    cd.date,
+                    s.id AS store_id,
+                    s.name AS store_name
+                FROM closed_date cd
+                JOIN store s ON cd.store_id = s.id
+                """;
+
+        return jdbcTemplate.query(sql, new MapSqlParameterSource(), rowMapper);
     }
 
     @Override
     public Optional<ClosedDate> findById(Long id) {
         String sql = """
-                SELECT * FROM closed_date 
-                WHERE id = :id
+                SELECT
+                    cd.id AS closed_date_id,
+                    cd.date,
+                    s.id AS store_id,
+                    s.name AS store_name
+                FROM closed_date cd
+                JOIN store s ON cd.store_id = s.id
+                WHERE cd.id = :id
                 """;
+
         SqlParameterSource params = new MapSqlParameterSource("id", id);
+
         try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, params, closedDateRowMapper));
+            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, params, rowMapper));
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
@@ -52,17 +78,25 @@ public class JdbcClosedDateRepository implements ClosedDateRepository {
     @Override
     public ClosedDate save(ClosedDate closedDate) {
         SqlParameterSource params = new MapSqlParameterSource()
+                .addValue("store_id", closedDate.store().id())
                 .addValue("date", closedDate.date());
+
         Long id = simpleJdbcInsert.executeAndReturnKey(params).longValue();
-        return ClosedDate.load(id, closedDate.date());
+
+        return ClosedDate.load(
+                id,
+                closedDate.store(),
+                closedDate.date()
+        );
     }
 
     @Override
     public void delete(Long id) {
         String sql = """
-                DELETE FROM closed_date 
+                DELETE FROM closed_date
                 WHERE id = :id
                 """;
+
         SqlParameterSource params = new MapSqlParameterSource("id", id);
         jdbcTemplate.update(sql, params);
     }
@@ -70,9 +104,11 @@ public class JdbcClosedDateRepository implements ClosedDateRepository {
     @Override
     public boolean existsByDate(LocalDate date) {
         String sql = """
-                SELECT COUNT(*) FROM closed_date 
+                SELECT COUNT(*)
+                FROM closed_date
                 WHERE date = :date
                 """;
+
         SqlParameterSource params = new MapSqlParameterSource("date", date);
         Integer count = jdbcTemplate.queryForObject(sql, params, Integer.class);
         return count != null && count > 0;

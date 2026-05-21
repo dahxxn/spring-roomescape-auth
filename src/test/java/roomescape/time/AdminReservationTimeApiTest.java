@@ -16,7 +16,10 @@ class AdminReservationTimeApiTest extends IntegrationTestSupport {
     void createReservationTime() {
         givenAdmin().log().all()
                 .contentType(ContentType.JSON)
-                .body(Map.of("startAt", "10:00"))
+                .body(Map.of(
+                        "storeId", storeId,
+                        "startAt", "10:00"
+                ))
                 .when().post("/admin/times")
                 .then().log().all()
                 .statusCode(201)

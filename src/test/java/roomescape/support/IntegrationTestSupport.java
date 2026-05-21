@@ -32,6 +32,10 @@ public abstract class IntegrationTestSupport {
     private String adminToken;
     private String userToken;
 
+    protected Long storeId;
+    protected Long adminId;
+    protected Long userId;
+
     @BeforeEach
     void setUpRestAssured() {
         RestAssured.port = port;
@@ -52,6 +56,31 @@ public abstract class IntegrationTestSupport {
         jdbcTemplate.update(
                 "INSERT INTO member (name, login_id, password, role) VALUES (?, ?, ?, ?)",
                 "테스트유저", "user01", "user1234", "USER"
+        );
+
+        adminId = jdbcTemplate.queryForObject(
+                "SELECT id FROM member WHERE login_id = ?",
+                Long.class,
+                "admin"
+        );
+        userId = jdbcTemplate.queryForObject(
+                "SELECT id FROM member WHERE login_id = ?",
+                Long.class,
+                "user01"
+        );
+
+        jdbcTemplate.update("INSERT INTO store (name) VALUES (?)", "강남점");
+
+        storeId = jdbcTemplate.queryForObject(
+                "SELECT id FROM store WHERE name = ?",
+                Long.class,
+                "강남점"
+        );
+
+        jdbcTemplate.update(
+                "INSERT INTO store_admin (member_id, store_id) VALUES (?, ?)",
+                adminId,
+                storeId
         );
     }
 
@@ -96,7 +125,10 @@ public abstract class IntegrationTestSupport {
     protected Long createTime(String startAt) {
         return givenAdmin()
                 .contentType(ContentType.JSON)
-                .body(Map.of("startAt", startAt))
+                .body(Map.of(
+                        "storeId", storeId,
+                        "startAt", startAt
+                ))
                 .when().post("/admin/times")
                 .then()
                 .statusCode(201)
@@ -107,6 +139,7 @@ public abstract class IntegrationTestSupport {
         return givenAdmin()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
+                        "storeId", storeId,
                         "name", name,
                         "description", name + " 설명",
                         "thumbnailUrl", name + " 썸네일"
@@ -132,6 +165,8 @@ public abstract class IntegrationTestSupport {
         return givenUser()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
+                        "memberId", userId,
+                        "storeId", storeId,
                         "date", date.toString(),
                         "timeId", timeId,
                         "themeId", themeId
@@ -144,9 +179,13 @@ public abstract class IntegrationTestSupport {
 
     protected Long savePastReservation(String name, LocalDate date, String startAt, Long themeId) {
         jdbcTemplate.update(
-                "INSERT INTO reservation (name, date, start_at, theme_id, status) VALUES (?, ?, ?, ?, ?)",
-                name, date, startAt, themeId, "RESERVED"
+                """
+                        INSERT INTO reservation (member_id, store_id, date, start_at, theme_id, status)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                userId, storeId, date, startAt, themeId, "RESERVED"
         );
+
         return jdbcTemplate.queryForObject("SELECT MAX(id) FROM reservation", Long.class);
     }
 }

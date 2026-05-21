@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import roomescape.common.exception.DomainValidationException;
+import roomescape.store.domain.Store;
 
 class ThemeTest {
+    private final Store store = Store.load(1L, "강남점");
     private final String name = "공포";
     private final String description = "테마 설명";
     private final String emptyThumbnailUrl = "";
@@ -14,51 +16,42 @@ class ThemeTest {
     @Test
     @DisplayName("테마 이름이 null이면 예외가 발생한다.")
     void create_null_name() {
-        // given
-        String nullName = null;
-
-        // when & then
-        assertThatThrownBy(() -> Theme.create(nullName, description, emptyThumbnailUrl))
+        assertThatThrownBy(() -> Theme.create(store, null, description, emptyThumbnailUrl))
                 .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
     @DisplayName("테마 이름이 비어있으면 예외가 발생한다.")
     void create_empty_name() {
-        // given
-        String emptyName = "";
-
-        // when & then
-        assertThatThrownBy(() -> Theme.create(emptyName, description, emptyThumbnailUrl))
+        assertThatThrownBy(() -> Theme.create(store, "", description, emptyThumbnailUrl))
                 .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
     @DisplayName("테마 설명이 null이면 예외가 발생한다.")
     void create_null_description() {
-        // given
-        String nullDescription = null;
-
-        // when & then
-        assertThatThrownBy(() -> Theme.create(name, nullDescription, emptyThumbnailUrl))
+        assertThatThrownBy(() -> Theme.create(store, name, null, emptyThumbnailUrl))
                 .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
     @DisplayName("테마 설명이 비어있으면 예외가 발생한다.")
     void create_empty_description() {
-        // given
-        String emptyDescription = "";
-
-        // when & then
-        assertThatThrownBy(() -> Theme.create(name, emptyDescription, emptyThumbnailUrl))
+        assertThatThrownBy(() -> Theme.create(store, name, "", emptyThumbnailUrl))
                 .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
     @DisplayName("테마 썸네일 URL이 비어있으면 예외가 발생한다.")
-    void create_empty_thumbnail(){
-        assertThatThrownBy(() -> Theme.create(name, description, emptyThumbnailUrl))
+    void create_empty_thumbnail() {
+        assertThatThrownBy(() -> Theme.create(store, name, description, emptyThumbnailUrl))
+                .isInstanceOf(DomainValidationException.class);
+    }
+
+    @Test
+    @DisplayName("매장이 null이면 예외가 발생한다.")
+    void create_null_store() {
+        assertThatThrownBy(() -> Theme.create(null, name, description, "테마 썸네일"))
                 .isInstanceOf(DomainValidationException.class);
     }
 }

@@ -18,7 +18,10 @@ class AdminClosedDateApiTest extends IntegrationTestSupport {
 
         givenAdmin().log().all()
                 .contentType(ContentType.JSON)
-                .body(Map.of("date", date))
+                .body(Map.of(
+                        "storeId", storeId,
+                        "date", date
+                ))
                 .when().post("/admin/closed-dates")
                 .then().log().all()
                 .statusCode(201)
@@ -54,7 +57,10 @@ class AdminClosedDateApiTest extends IntegrationTestSupport {
     private Long createClosedDate(String date) {
         return givenAdmin()
                 .contentType(ContentType.JSON)
-                .body(Map.of("date", date))
+                .body(Map.of(
+                        "storeId", storeId,
+                        "date", date
+                ))
                 .when().post("/admin/closed-dates")
                 .then()
                 .statusCode(201)
