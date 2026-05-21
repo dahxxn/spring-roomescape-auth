@@ -1,0 +1,364 @@
+let myStoreId = null;
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const isLoggedIn = await initAuth();
+    if (!isLoggedIn) return;
+
+    await loadMyStore();
+
+    initTabs();
+    initDatePicker();
+    initTimeSelectBox();
+
+    loadDates();
+    loadTimes();
+    loadThemes();
+    loadReservations();
+});
+
+async function loadMyStore() {
+    const response = await fetch("/manager/store", {credentials: "same-origin"});
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    const store = await checkedResponse.json();
+    myStoreId = store.id;
+}
+
+function initTabs() {
+    const tabButtons = document.querySelectorAll(".tab-button");
+    const panels = document.querySelectorAll(".panel");
+
+    tabButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            tabButtons.forEach(tab => tab.classList.remove("active"));
+            panels.forEach(panel => panel.classList.remove("active"));
+
+            button.classList.add("active");
+
+            const panelId = button.dataset.panel;
+            document.getElementById(panelId).classList.add("active");
+        });
+    });
+}
+
+function initDatePicker() {
+    const dateInput = document.getElementById("date-input");
+    const datePickerButton = document.getElementById("date-picker-button");
+    const selectedDateText = document.getElementById("selected-date-text");
+
+    datePickerButton.addEventListener("click", () => {
+        if (dateInput.showPicker) {
+            dateInput.showPicker();
+            return;
+        }
+        dateInput.click();
+    });
+
+    dateInput.addEventListener("change", () => {
+        if (!dateInput.value) {
+            selectedDateText.textContent = "날짜를 선택하세요";
+            return;
+        }
+        selectedDateText.textContent = dateInput.value;
+    });
+}
+
+function initTimeSelectBox() {
+    const hourSelect = document.getElementById("hour-select");
+    const minuteSelect = document.getElementById("minute-select");
+
+    for (let hour = 0; hour < 24; hour++) {
+        const option = document.createElement("option");
+        option.value = String(hour).padStart(2, "0");
+        option.textContent = `${hour}시`;
+        hourSelect.appendChild(option);
+    }
+
+    for (let minute = 0; minute < 60; minute += 10) {
+        const option = document.createElement("option");
+        option.value = String(minute).padStart(2, "0");
+        option.textContent = `${minute}분`;
+        minuteSelect.appendChild(option);
+    }
+
+    hourSelect.value = "12";
+    minuteSelect.value = "00";
+}
+
+async function loadDates() {
+    const response = await fetch("/manager/closed-dates", {credentials: "same-origin"});
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    const dates = await checkedResponse.json();
+    const tbody = document.getElementById("date-table-body");
+    tbody.innerHTML = "";
+
+    dates.forEach(date => {
+        tbody.insertAdjacentHTML("beforeend", `
+            <tr>
+                <td>${date.id}</td>
+                <td>${date.date}</td>
+                <td class="align-right">
+                    <button class="delete-button" type="button" onclick="deleteDate(${date.id})">🗑</button>
+                </td>
+            </tr>
+        `);
+    });
+}
+
+async function createDate() {
+    const dateInput = document.getElementById("date-input");
+    const selectedDateText = document.getElementById("selected-date-text");
+    const date = dateInput.value;
+
+    if (!date) {
+        alert("날짜를 선택해주세요.");
+        return;
+    }
+
+    const response = await fetch("/manager/closed-dates", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify({storeId: myStoreId, date})
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
+
+    dateInput.value = "";
+    selectedDateText.textContent = "날짜를 선택하세요";
+    await loadDates();
+}
+
+async function deleteDate(id) {
+    if (!confirm("해당 휴무일을 삭제하시겠습니까?")) return;
+
+    const response = await fetch(`/manager/closed-dates/${id}`, {
+        method: "DELETE",
+        credentials: "same-origin"
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
+
+    await loadDates();
+}
+
+async function loadTimes() {
+    const response = await fetch("/manager/times", {credentials: "same-origin"});
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    const times = await checkedResponse.json();
+    const tbody = document.getElementById("time-table-body");
+    tbody.innerHTML = "";
+
+    times.forEach(time => {
+        tbody.insertAdjacentHTML("beforeend", `
+            <tr>
+                <td>${time.id}</td>
+                <td>${formatTime(time.startAt)}</td>
+                <td class="align-right">
+                    <button class="delete-button" type="button" onclick="deleteTime(${time.id})">🗑</button>
+                </td>
+            </tr>
+        `);
+    });
+}
+
+async function createTime() {
+    const hour = document.getElementById("hour-select").value;
+    const minute = document.getElementById("minute-select").value;
+    const startAt = `${hour}:${minute}:00`;
+
+    const response = await fetch("/manager/times", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify({storeId: myStoreId, startAt})
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
+
+    await loadTimes();
+}
+
+async function deleteTime(id) {
+    if (!confirm("해당 시간을 삭제하시겠습니까?")) return;
+
+    const response = await fetch(`/manager/times/${id}`, {
+        method: "DELETE",
+        credentials: "same-origin"
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
+
+    await loadTimes();
+}
+
+async function loadThemes() {
+    const response = await fetch("/manager/themes", {credentials: "same-origin"});
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    const themes = await checkedResponse.json();
+    const tbody = document.getElementById("theme-table-body");
+    tbody.innerHTML = "";
+
+    themes.forEach(theme => {
+        const badgeClass = theme.isActive ? "active" : "inactive";
+        const badgeText = theme.isActive ? "활성" : "비활성";
+
+        tbody.insertAdjacentHTML("beforeend", `
+            <tr>
+                <td>${theme.id}</td>
+                <td>${theme.name}</td>
+                <td>
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                </td>
+                <td class="align-right">
+                    <button class="status-button" type="button"
+                            onclick="toggleThemeStatus(${theme.id}, ${!theme.isActive})">
+                        상태 변경
+                    </button>
+                </td>
+            </tr>
+        `);
+    });
+}
+
+async function createTheme() {
+    const name = document.getElementById("theme-name-input").value;
+    const description = document.getElementById("theme-description-input").value;
+    const thumbnailUrl = document.getElementById("theme-thumbnail-input").value;
+
+    if (!name || !description || !thumbnailUrl) {
+        alert("테마 정보를 모두 입력해주세요.");
+        return;
+    }
+
+    const response = await fetch("/manager/themes", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify({storeId: myStoreId, name, description, thumbnailUrl})
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
+
+    document.getElementById("theme-name-input").value = "";
+    document.getElementById("theme-description-input").value = "";
+    document.getElementById("theme-thumbnail-input").value = "";
+
+    await loadThemes();
+}
+
+async function toggleThemeStatus(id, isActive) {
+    const response = await fetch(`/manager/themes/${id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify({isActive})
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
+
+    await loadThemes();
+}
+
+async function loadReservations() {
+    const response = await fetch("/manager/reservations", {credentials: "same-origin"});
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    const reservations = await checkedResponse.json();
+    const tbody = document.getElementById("reservation-table-body");
+    tbody.innerHTML = "";
+
+    reservations.forEach(reservation => {
+        tbody.insertAdjacentHTML("beforeend", `
+            <tr>
+                <td>${reservation.id}</td>
+                <td>${reservation.name}</td>
+                <td>${reservation.date}</td>
+                <td>${formatTime(reservation.time)}</td>
+                <td>${reservation.theme.name}</td>
+                <td>${reservation.status}</td>
+                <td class="align-right">
+                    <button class="status-button" type="button" onclick="cancelReservation(${reservation.id})">
+                        취소
+                    </button>
+                </td>
+            </tr>
+        `);
+    });
+}
+
+async function cancelReservation(id) {
+    if (!confirm("해당 예약을 취소하시겠습니까?")) return;
+
+    const response = await fetch(`/manager/reservations/${id}/cancel`, {
+        method: "PATCH",
+        credentials: "same-origin"
+    });
+
+    const checkedResponse = await handleAuthResponse(response);
+    if (!checkedResponse) return;
+
+    if (!checkedResponse.ok) {
+        const error = await checkedResponse.json();
+        alert(error.message);
+        return;
+    }
+
+    await loadReservations();
+}
+
+function formatTime(value) {
+    if (!value) return "";
+    const parts = value.split(":");
+    return `${parts[0]}:${parts[1]}:${parts[2] ?? "00"}`;
+}
