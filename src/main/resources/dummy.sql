@@ -72,13 +72,12 @@ MERGE INTO theme (store_id, name, description, thumbnail_url, is_active) KEY (st
     'https://images.unsplash.com/photo-1566073771259-6a8506099945',
     true
     );
-
 INSERT INTO reservation (member_id, store_id, date, start_at, theme_id, status)
 VALUES
     (
         (SELECT id FROM member WHERE login_id = 'user01'),
         (SELECT id FROM store WHERE name = '강남점'),
-        DATEADD('DAY', 0, CURRENT_DATE),
+        DATEADD('DAY', -1, CURRENT_DATE),
         '11:00:00',
         (SELECT id FROM theme WHERE name = '잠겨버린 연구실' AND store_id = (SELECT id FROM store WHERE name = '강남점')),
         'RESERVED'
@@ -86,7 +85,7 @@ VALUES
     (
         (SELECT id FROM member WHERE login_id = 'user01'),
         (SELECT id FROM store WHERE name = '강남점'),
-        DATEADD('DAY', 0, CURRENT_DATE),
+        DATEADD('DAY', -1, CURRENT_DATE),
         '12:00:00',
         (SELECT id FROM theme WHERE name = '사라진 탐정' AND store_id = (SELECT id FROM store WHERE name = '강남점')),
         'RESERVED'
@@ -94,7 +93,7 @@ VALUES
     (
         (SELECT id FROM member WHERE login_id = 'user01'),
         (SELECT id FROM store WHERE name = '잠실점'),
-        DATEADD('DAY', 0, CURRENT_DATE),
+        DATEADD('DAY', -1, CURRENT_DATE),
         '11:00:00',
         (SELECT id FROM theme WHERE name = '고대 유적의 비밀' AND store_id = (SELECT id FROM store WHERE name = '잠실점')),
         'RESERVED'
@@ -102,7 +101,7 @@ VALUES
     (
         (SELECT id FROM member WHERE login_id = 'user01'),
         (SELECT id FROM store WHERE name = '잠실점'),
-        DATEADD('DAY', 0, CURRENT_DATE),
+        DATEADD('DAY', -1, CURRENT_DATE),
         '12:00:00',
         (SELECT id FROM theme WHERE name = '유령 호텔' AND store_id = (SELECT id FROM store WHERE name = '잠실점')),
         'RESERVED'
