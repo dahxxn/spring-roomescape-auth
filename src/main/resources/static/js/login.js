@@ -11,9 +11,9 @@ async function login() {
 
     const response = await fetch("/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {"Content-Type": "application/json"},
         credentials: "same-origin",
-        body: JSON.stringify({ loginId, password })
+        body: JSON.stringify({loginId, password})
     });
 
     if (!response.ok) {
@@ -30,6 +30,11 @@ async function login() {
 
     if (me.role === "ADMIN") {
         location.href = "/admin-page";
+        return;
+    }
+
+    if (me.role === "MANAGER") {
+        location.href = "/manager-page";
         return;
     }
 

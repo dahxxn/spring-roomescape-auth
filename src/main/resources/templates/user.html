@@ -18,11 +18,11 @@
 </header>
 
 <main class="container">
-    <!-- 1단계: 인기 테마 + 날짜 + 테마 선택 -->
+    <!-- 1단계: 매장 + 날짜 + 테마 선택 -->
     <section id="select-section">
         <section class="hero">
             <h1>어둠 속의 진실을 마주하라</h1>
-            <p>선택된 자만이 진실에 다가갈 수 있습니다. 날짜와 테마를 선택하고 미지의 세계로 발을 들이세요.</p>
+            <p>선택된 자만이 진실에 다가갈 수 있습니다. 매장과 날짜, 테마를 선택하고 미지의 세계로 발을 들이세요.</p>
         </section>
 
         <section class="popular-section">
@@ -30,17 +30,21 @@
                 <p>POPULAR THEMES</p>
                 <h2>인기 테마 TOP 10</h2>
             </div>
-
             <div id="popular-theme-list" class="popular-theme-list"></div>
         </section>
 
         <section class="step-section">
-            <h2><span>01.</span> 날짜 선택</h2>
+            <h2><span>01.</span> 매장 선택</h2>
+            <div id="store-list" class="date-list"></div>
+        </section>
+
+        <section class="step-section">
+            <h2><span>02.</span> 날짜 선택</h2>
             <div id="date-list" class="date-list"></div>
         </section>
 
         <section id="theme-select-section" class="step-section">
-            <h2><span>02.</span> 테마 선택</h2>
+            <h2><span>03.</span> 테마 선택</h2>
             <div id="theme-list" class="theme-list"></div>
         </section>
 
@@ -51,7 +55,7 @@
         </div>
     </section>
 
-    <!-- 2단계: 시간 + 이름 입력 -->
+    <!-- 2단계: 시간 선택 -->
     <section id="confirm-section" class="confirm-section hidden">
         <button class="back-button" type="button" onclick="goBackToSelectStep()">← 뒤로 가기</button>
 
@@ -65,11 +69,6 @@
                 <section class="form-group">
                     <h2>방문 시간</h2>
                     <div id="time-list" class="time-list"></div>
-                </section>
-
-                <section class="form-group">
-                    <h2>예약자 성함</h2>
-                    <input id="reservation-name-input" class="name-input" type="text" placeholder="이름을 입력하세요">
                 </section>
 
                 <button class="primary-button full" type="button" onclick="createReservation()">

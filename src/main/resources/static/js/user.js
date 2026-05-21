@@ -1,3 +1,4 @@
+let selectedStore = null;
 let selectedDate = null;
 let selectedTheme = null;
 let selectedTime = null;
@@ -5,25 +6,55 @@ let selectedTime = null;
 const DEFAULT_THUMBNAIL_URL = 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80';
 
 document.addEventListener("DOMContentLoaded", async () => {
-    await initAuth(); // 로그인 여부만 확인, return으로 막지 않음
+    await initAuth();
 
-    await loadThemes();
+    await loadStores();
     await loadPopularThemes();
     await loadDates();
 });
 
+async function loadStores() {
+    const response = await fetch("/stores", {credentials: "same-origin"});
+
+    if (!response.ok) {
+        alert("매장 목록을 불러오지 못했습니다.");
+        return;
+    }
+
+    const stores = await response.json();
+    const storeList = document.getElementById("store-list");
+    storeList.innerHTML = "";
+
+    stores.forEach(store => {
+        const button = document.createElement("button");
+        button.className = "date-card";
+        button.type = "button";
+        button.innerHTML = `
+            <span class="month" style="margin-top: 28px; font-size: 15px;">${store.name}</span>
+        `;
+
+        button.addEventListener("click", async () => {
+            document.querySelectorAll("#store-list .date-card")
+                .forEach(item => item.classList.remove("selected"));
+            button.classList.add("selected");
+            selectedStore = store;
+            selectedTheme = null;
+            selectedTime = null;
+            await loadThemes();
+        });
+
+        storeList.appendChild(button);
+    });
+}
+
 async function loadPopularThemes() {
     const popularThemeList = document.getElementById("popular-theme-list");
 
-    const response = await fetch("/themes/popular?top=10", {
-        credentials: "same-origin"
-    });
+    const response = await fetch("/themes/popular?top=10", {credentials: "same-origin"});
 
     if (!response.ok) {
         popularThemeList.innerHTML = `
-            <div class="popular-empty-message">
-                인기 테마를 불러오지 못했습니다.
-            </div>
+            <div class="popular-empty-message">인기 테마를 불러오지 못했습니다.</div>
         `;
         return;
     }
@@ -33,9 +64,7 @@ async function loadPopularThemes() {
 
     if (themes.length === 0) {
         popularThemeList.innerHTML = `
-            <div class="popular-empty-message">
-                아직 인기 테마 데이터가 없습니다.
-            </div>
+            <div class="popular-empty-message">아직 인기 테마 데이터가 없습니다.</div>
         `;
         return;
     }
@@ -56,7 +85,7 @@ async function loadPopularThemes() {
         article.addEventListener("click", () => {
             selectTheme(theme);
             const themeSection = document.getElementById("theme-select-section");
-            themeSection.scrollIntoView({ behavior: "smooth", block: "start" });
+            themeSection.scrollIntoView({behavior: "smooth", block: "start"});
         });
 
         popularThemeList.appendChild(article);
@@ -64,9 +93,7 @@ async function loadPopularThemes() {
 }
 
 async function loadDates() {
-    const response = await fetch("/available-dates", {
-        credentials: "same-origin"
-    });
+    const response = await fetch("/available-dates", {credentials: "same-origin"});
 
     if (!response.ok) {
         alert("날짜 목록을 불러오지 못했습니다.");
@@ -79,7 +106,7 @@ async function loadDates() {
 
     dates.forEach(dateDto => {
         const localDate = new Date(dateDto.date);
-        const month = localDate.toLocaleString("en-US", { month: "short" }).toUpperCase();
+        const month = localDate.toLocaleString("en-US", {month: "short"}).toUpperCase();
         const day = localDate.getDate();
 
         const button = document.createElement("button");
@@ -91,7 +118,7 @@ async function loadDates() {
         `;
 
         button.addEventListener("click", () => {
-            document.querySelectorAll(".date-card")
+            document.querySelectorAll("#date-list .date-card")
                 .forEach(item => item.classList.remove("selected"));
             button.classList.add("selected");
             selectedDate = dateDto.date;
@@ -102,9 +129,9 @@ async function loadDates() {
 }
 
 async function loadThemes() {
-    const response = await fetch("/themes", {
-        credentials: "same-origin"
-    });
+    if (!selectedStore) return;
+
+    const response = await fetch(`/themes?storeId=${selectedStore.id}`, {credentials: "same-origin"});
 
     if (!response.ok) {
         alert("테마 목록을 불러오지 못했습니다.");
@@ -118,11 +145,7 @@ async function loadThemes() {
     themes.forEach(theme => {
         const article = document.createElement("article");
         article.className = "theme-card";
-
         article.dataset.themeId = theme.id;
-        article.dataset.themeName = theme.name;
-        article.dataset.themeDescription = theme.description;
-        article.dataset.themeThumbnailUrl = theme.thumbnailUrl;
 
         article.innerHTML = `
             <img src="${theme.thumbnailUrl || DEFAULT_THUMBNAIL_URL}" alt="${theme.name}">
@@ -145,21 +168,19 @@ function selectTheme(theme) {
 
     document.querySelectorAll(".theme-card")
         .forEach(card => {
-            const cardThemeId = Number(card.dataset.themeId);
-            if (cardThemeId === Number(theme.id)) {
-                card.classList.add("selected");
-                return;
-            }
-            card.classList.remove("selected");
+            card.classList.toggle("selected", Number(card.dataset.themeId) === Number(theme.id));
         });
 }
 
 async function goToReservationStep() {
+    if (!selectedStore) {
+        alert("매장을 선택해주세요.");
+        return;
+    }
     if (!selectedDate) {
         alert("날짜를 선택해주세요.");
         return;
     }
-
     if (!selectedTheme) {
         alert("테마를 선택해주세요.");
         return;
@@ -174,7 +195,6 @@ async function goToReservationStep() {
 function goBackToSelectStep() {
     document.getElementById("confirm-section").classList.add("hidden");
     document.getElementById("select-section").classList.remove("hidden");
-
     selectedTime = null;
 }
 
@@ -222,6 +242,7 @@ async function createReservation() {
     }
 
     const requestBody = {
+        storeId: selectedStore.id,
         date: selectedDate,
         timeId: selectedTime.id,
         themeId: selectedTheme.id
@@ -229,7 +250,7 @@ async function createReservation() {
 
     const response = await fetch("/reservations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {"Content-Type": "application/json"},
         credentials: "same-origin",
         body: JSON.stringify(requestBody)
     });
