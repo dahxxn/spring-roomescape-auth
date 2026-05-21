@@ -2,6 +2,7 @@ package roomescape.closeddate.domain;
 
 import java.time.LocalDate;
 import roomescape.common.exception.DomainValidationException;
+import roomescape.common.exception.ForbiddenException;
 import roomescape.store.domain.Store;
 
 public class ClosedDate {
@@ -60,4 +61,9 @@ public class ClosedDate {
         return date;
     }
 
+    public void validateManagerAccess(Long managerStoreId) {
+        if (!this.store.id().equals(managerStoreId)) {
+            throw new ForbiddenException("자기 매장의 휴무일만 관리할 수 있습니다.");
+        }
+    }
 }

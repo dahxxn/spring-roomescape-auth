@@ -3,6 +3,7 @@ package roomescape.time.domain;
 import java.time.LocalTime;
 import java.util.Objects;
 import roomescape.common.exception.DomainValidationException;
+import roomescape.common.exception.ForbiddenException;
 import roomescape.store.domain.Store;
 
 public class ReservationTime {
@@ -70,5 +71,11 @@ public class ReservationTime {
         }
 
         return Objects.equals(this.id, that.id);
+    }
+
+    public void validateManagerAccess(Long managerStoreId) {
+        if (!this.store.id().equals(managerStoreId)) {
+            throw new ForbiddenException("자기 매장의 예약 시간만 관리할 수 있습니다.");
+        }
     }
 }

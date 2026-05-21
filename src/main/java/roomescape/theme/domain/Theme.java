@@ -1,6 +1,7 @@
 package roomescape.theme.domain;
 
 import roomescape.common.exception.DomainValidationException;
+import roomescape.common.exception.ForbiddenException;
 import roomescape.store.domain.Store;
 
 public class Theme {
@@ -89,5 +90,11 @@ public class Theme {
 
     public Theme changeStatus(boolean isActive) {
         return new Theme(id, store, name, description, thumbnailUrl, isActive);
+    }
+
+    public void validateManagerAccess(Long managerStoreId) {
+        if (!this.store.id().equals(managerStoreId)) {
+            throw new ForbiddenException("자기 매장의 테마만 관리할 수 있습니다.");
+        }
     }
 }
